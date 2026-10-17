@@ -1,4 +1,5 @@
 machine_id,member,computer_model,cpu_model,cpu_cores,ram_gb,os,docker_cpus,docker_memory_gb,power
 kenza-mba,kenza,MacBook Air 2022,Apple M2,8,16,macOS 26.6.2,8,8,plugged in
 neil-mac,neil,MacBook Neo,Apple A18 Pro,6,8,6,4,battery
+chloe-mac,Chloe,Macbook Air,Apple M5,10,24 GB,macOS Tahoe 26.7,10,8,
 vicente-mba,vicente,MacBook Air 2020,Apple M1,8,8,macOS 26.4,8,4,battery
