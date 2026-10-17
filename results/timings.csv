@@ -209,7 +209,6 @@ session_id,timestamp_utc,member,machine_id,code_version,python_version,os,arch,c
 357395e2f6e2,2026-10-17T14:15:35+00:00,kenza,kenza-mba,2c52c55,3.13.16,Linux 7.0.12-linuxkit,aarch64,unknown,8,7.75,True,0,CORE,spotify,track_id,file,114000,point_miss,,1000,4,333417,ref_bisect,,,,,,,,,
 357395e2f6e2,2026-10-17T14:15:36+00:00,kenza,kenza-mba,2c52c55,3.13.16,Linux 7.0.12-linuxkit,aarch64,unknown,8,7.75,True,0,CORE,spotify,tempo,file,114000,range,0.01,200,4,3308750,ref_bisect,,,,,,,,,
 357395e2f6e2,2026-10-17T14:15:36+00:00,kenza,kenza-mba,2c52c55,3.13.16,Linux 7.0.12-linuxkit,aarch64,unknown,8,7.75,True,0,CORE,spotify,track_name,file,113999,prefix,3,200,4,1730666,ref_bisect,,,,,,,,,
-<<<<<<< Updated upstream
 e44bc32506ce,2026-10-17T18:42:10+00:00,neil,neil-mac,e9c1863,3.13.16,Linux 7.0.12-linuxkit,aarch64,unknown,6,3.82,True,0,CORE,spotify,track_id,file,10000,build,,10000,0,797292,unsorted_list,,0,0,0,0,0,,,
 e44bc32506ce,2026-10-17T18:42:10+00:00,neil,neil-mac,e9c1863,3.13.16,Linux 7.0.12-linuxkit,aarch64,unknown,6,3.82,True,0,CORE,spotify,track_id,file,114000,build,,114000,0,9120500,unsorted_list,,0,0,0,0,0,,,
 e44bc32506ce,2026-10-17T18:42:12+00:00,neil,neil-mac,e9c1863,3.13.16,Linux 7.0.12-linuxkit,aarch64,unknown,6,3.82,True,0,CORE,spotify,track_id,file,114000,point_hit,,1000,0,1967461043,unsorted_list,,114000000,0,0,0,0,,,
@@ -420,7 +419,6 @@ e44bc32506ce,2026-10-17T18:44:48+00:00,neil,neil-mac,e9c1863,3.13.16,Linux 7.0.1
 e44bc32506ce,2026-10-17T18:44:48+00:00,neil,neil-mac,e9c1863,3.13.16,Linux 7.0.12-linuxkit,aarch64,unknown,6,3.82,True,0,CORE,spotify,track_id,file,114000,point_miss,,1000,4,254084,ref_bisect,,,,,,,,,
 e44bc32506ce,2026-10-17T18:44:48+00:00,neil,neil-mac,e9c1863,3.13.16,Linux 7.0.12-linuxkit,aarch64,unknown,6,3.82,True,0,CORE,spotify,tempo,file,114000,range,0.01,200,4,3242375,ref_bisect,,,,,,,,,
 e44bc32506ce,2026-10-17T18:44:49+00:00,neil,neil-mac,e9c1863,3.13.16,Linux 7.0.12-linuxkit,aarch64,unknown,6,3.82,True,0,CORE,spotify,track_name,file,113999,prefix,3,200,4,1438000,ref_bisect,,,,,,,,,
-=======
 b27e2804a3ab,2026-10-17T18:47:21+00:00,Chloe,chloe-mac,e9c1863,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,10,7.75,True,0,CORE,spotify,track_id,file,10000,build,,10000,0,712042,unsorted_list,,0,0,0,0,0,,,
 b27e2804a3ab,2026-10-17T18:47:21+00:00,Chloe,chloe-mac,e9c1863,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,10,7.75,True,0,CORE,spotify,track_id,file,114000,build,,114000,0,7046250,unsorted_list,,0,0,0,0,0,,,
 b27e2804a3ab,2026-10-17T18:47:22+00:00,Chloe,chloe-mac,e9c1863,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,10,7.75,True,0,CORE,spotify,track_id,file,114000,point_hit,,1000,0,1432015459,unsorted_list,,114000000,0,0,0,0,,,
@@ -631,4 +629,3 @@ b27e2804a3ab,2026-10-17T18:49:08+00:00,Chloe,chloe-mac,e9c1863,3.13.16,Linux 7.0
 b27e2804a3ab,2026-10-17T18:49:08+00:00,Chloe,chloe-mac,e9c1863,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,10,7.75,True,0,CORE,spotify,track_id,file,114000,point_miss,,1000,4,219583,ref_bisect,,,,,,,,,
 b27e2804a3ab,2026-10-17T18:49:08+00:00,Chloe,chloe-mac,e9c1863,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,10,7.75,True,0,CORE,spotify,tempo,file,114000,range,0.01,200,4,2750042,ref_bisect,,,,,,,,,
 b27e2804a3ab,2026-10-17T18:49:08+00:00,Chloe,chloe-mac,e9c1863,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,10,7.75,True,0,CORE,spotify,track_name,file,113999,prefix,3,200,4,1447209,ref_bisect,,,,,,,,,
->>>>>>> Stashed changes
