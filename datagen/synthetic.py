@@ -21,19 +21,18 @@ import string
 from typing import Any, Optional, Sequence
 
 
-def random_keys(
-    n: int,
-    length: int = 8,
-    alphabet: str = string.ascii_lowercase,
-    seed: Optional[int] = None,
-) -> list[str]:
-    """Return ``n`` *distinct* random strings, each exactly ``length`` characters
-    long, using only characters from ``alphabet``, in random order.
-
-    Raise ``ValueError`` if ``n`` is larger than the number of possible
-    strings (``len(alphabet) ** length``).
-    """
-    raise NotImplementedError
+def random_keys(n, length=8, alphabet=string.ascii_lowercase, seed=None):
+    if n > len(alphabet) ** length:
+        raise ValueError(f"cannot make {n} distinct keys of length {length}")
+    rng = random.Random(seed)
+    seen = set()
+    keys = []
+    while len(keys) < n:
+        key = "".join(rng.choice(alphabet) for _ in range(length))
+        if key not in seen:
+            seen.add(key)
+            keys.append(key)
+    return keys
 
 
 def arrange(
