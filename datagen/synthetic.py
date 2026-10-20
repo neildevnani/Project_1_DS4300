@@ -52,7 +52,24 @@ def arrange(
 
     Raise ``ValueError`` for any other ``order``.
     """
-    raise NotImplementedError
+    rng = random.Random(seed)
+    if order == "random":
+        result = list(keys)
+        rng.shuffle(result)
+        return result
+    if order == "sorted":
+        return sorted(keys)
+    if order == "reversed":
+        return sorted(keys, reverse=True)
+    if order == "nearly_sorted":
+        result = sorted(keys)
+        n_swaps = round(swap_fraction * len(keys))
+        for _ in range(n_swaps):
+            i = rng.randrange(len(result))
+            j = rng.randrange(len(result))
+            result[i], result[j] = result[j], result[i]
+        return result
+    raise ValueError(f"unknown order: {order!r}")
 
 
 def point_queries(
