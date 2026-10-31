@@ -83,7 +83,7 @@ def e1(writer: ResultsWriter, tracks: list[dict], reps: int) -> None:
                 index = make_index(name)
                 ns = time_build(index, subset)
                 writer.record(
-                    index, experiment="e1", dataset="spotify", key_column="track_id",
+                    index, experiment="E1_build_track_id", dataset="spotify", key_column="track_id",
                     insert_order="file", n_keys=n, operation="build", operation_param="",
                     n_ops=n, rep=rep, total_ns=ns, memory_bytes=memory,
                 )
@@ -106,7 +106,7 @@ def e2(writer: ResultsWriter, tracks: list[dict], reps: int) -> None:
 
             for rep in range(reps):
                 common = dict(
-                    experiment="e2", dataset="spotify", key_column="track_id",
+                    experiment="E2_point_track_id", dataset="spotify", key_column="track_id",
                     insert_order="file", n_keys=n, rep=rep,
                 )
                 index.reset_stats() #start fresh
@@ -141,7 +141,7 @@ def e3(writer: ResultsWriter, tracks: list[dict], reps: int) -> None:
         for s in selectivities: #goes through every selectivity
             for rep in range(reps): #measurement reps times for that selectivity
                 common = dict(
-                    experiment="e3", dataset="spotify", key_column="tempo",
+                    experiment="E3_range_tempo", dataset="spotify", key_column="tempo",
                     insert_order="file", n_keys=len(pairs), rep=rep
                 )
                 index.reset_stats()
@@ -168,7 +168,7 @@ def e4(writer: ResultsWriter, tracks: list[dict], reps: int) -> None:
         for l in length:
             for rep in range(reps):
                 common = dict(
-                    experiment="e4", dataset="spotify", key_column="track_name",
+                    experiment="E4_prefix_track_name", dataset="spotify", key_column="track_name",
                     insert_order="file", n_keys=len(pairs), rep=rep
                 )
                 index.reset_stats()
@@ -191,7 +191,7 @@ def e5(writer: ResultsWriter, tracks: list[dict], reps: int) -> None:
             for name in ALL_INDEXES:
                 for rep in range(reps):
                     common = dict(
-                        experiment="e5", dataset="synthetic", key_column="random_keys",
+                        experiment="E5_insert_order", dataset="synthetic", key_column="random_keys",
                         insert_order=order, n_keys=n, rep=rep,
                     )
                     index = make_index(name)  # fresh index each rep, stats start at 0 so they count the build
@@ -229,7 +229,7 @@ def e6(writer: ResultsWriter, tracks: list[dict], reps: int) -> None:
 
         for rep in range(reps):
             common = dict(
-                experiment="e6", dataset="spotify", key_column="track_id",
+                experiment="E6_bplus_order", dataset="spotify", key_column="track_id",
                 insert_order="file", n_keys=len(id_pairs), rep=rep,
             )
             index = make_index("bplus_tree", order=order)  # fresh tree each rep
@@ -255,7 +255,7 @@ def e6(writer: ResultsWriter, tracks: list[dict], reps: int) -> None:
             tempo_index.reset_stats()
             ns = time_batch(lambda q: tempo_index.range_search(*q), ranges)
             writer.record(
-                tempo_index, experiment="e6", dataset="spotify", key_column="tempo",
+                tempo_index, experiment="E6_bplus_order", dataset="spotify", key_column="tempo",
                 insert_order="file", n_keys=len(tempo_pairs), rep=rep, operation="range",
                 operation_param=0.01, n_ops=len(ranges), total_ns=ns, height=tempo_height,
             )
@@ -284,7 +284,7 @@ def e7(writer: ResultsWriter, tracks: list[dict], reps: int) -> None:
 
             for rep in range(reps):
                 common = dict(
-                    experiment="e7", dataset="spotify", key_column=column,
+                    experiment="E7_duplicate_keys", dataset="spotify", key_column=column,
                     insert_order="file", n_keys=len(pairs), rep=rep,
                 )
                 index = make_index(name)  # fresh index each rep
