@@ -1,0 +1,262 @@
+# Practical 1 report: [team name]
+
+Submit as a PDF on Gradescope. Aim for 10–15 pages of content plus appendices. Every figure needs labeled axes with units, a caption saying what to notice, and a pointer to the notebook cell that made it.
+
+## 1. Executive summary (≤ 1 page)
+
+[To write after all fixes are in: one recommendation per feature (F1 track page, F2 search-as-you-type, F3 workout mode, F4 catalog import), each with the single strongest piece of evidence. Name the incidents you found.]
+
+## 2. How the indexes work (Part A)
+
+Line numbers refer to the interns' original code (commit 37403b8). Our hash table fix (INC-02) only changed the contents of hash_table.py line 60, so the line numbers there did not move.
+
+### Expected big-O per index
+
+n is the number of keys stored and k is the number of results a range or prefix query returns. These are the costs each index should have in theory. Where the interns' code did not match, we say so below and in Section 5.
+
+Unsorted list: build O(n), point lookup O(n), range O(n), prefix O(n).
+Sorted list: build O(n²) because each insert shifts the list, point lookup O(log n), range O(log n + k), prefix O(log n + k).
+Hash table: build O(n) on average, point lookup O(1) on average, range O(n), prefix O(n).
+AVL tree: build O(n log n), point lookup O(log n), range O(log n + k), prefix O(log n + k).
+B+ tree: build O(n log n), point lookup O(log n), range O(log n + k), prefix O(log n + k).
+dict reference: build O(n) on average, point lookup O(1) on average, range O(n), prefix O(n).
+bisect reference: build O(n²) because each insert shifts the list, point lookup O(log n), range O(log n + k), prefix O(log n + k).
+
+Prefix search is the same as a range search for every index, because base.py turns a prefix into the range from the prefix to the prefix plus the largest Unicode character (base.py lines 100–102 and line 29).
+
+### Q1: What work does search do as n grows?
+
+#### Unsorted list (indexes/unsorted_list.py)
+
+Search checks every stored (key, value) pair one by one and keeps the values whose key matches. It never stops early, even after finding a match, because the list isn't ordered and duplicate keys could be anywhere (the comment on line 27 says this). So a hit and a miss cost exactly the same: n comparisons. Expected cost: O(n).
+
+Lines that do the work: line 28 is the list comprehension that loops over every entry and tests k == key, and line 29 adds the length of the list to the comparisons counter, one per entry examined.
+
+#### Sorted list (indexes/sorted_list.py)
+
+A sorted list should be able to find a key with binary search, which cuts the search space in half each step, so the expected cost is O(log n). The file already has a binary search, _bisect_left (lines 27–42), and insert (line 45) and range_search (line 71) both use it.
+
+However, search itself (lines 53–65) does not use it. Instead it walks the list from the start (the for loop on line 57), checking each key until it finds a match (line 59) or passes where the key would be (line 62). Because the keys are sorted it can stop early, but on average it still looks at about half the list, so the interns' version costs O(n), not O(log n). This is the bug in INC-01. Lines 60 and 64 add the number of keys checked to the comparisons counter.
+
+#### Hash table (indexes/hash_table.py)
+
+Search does three things: it computes the hash of the key, takes it modulo the number of buckets to pick one bucket, and then looks through that one bucket, comparing each stored key with the target until it finds a match or reaches the end of the bucket (which means the key was never inserted).
+
+The first two steps happen on line 40 (inside _bucket_for, called from line 69) and the bucket scan is lines 71–77. Hashing and picking a bucket are O(1) because they don't depend on n. The bucket scan depends on how long the bucket is, but lines 55–56 keep the average bucket short: whenever the number of keys goes above 0.75 per bucket on average, the table grows and spreads the keys out (_grow, lines 58–66). So the expected cost of a search is O(1). The worst case is O(n), if all keys ended up in the same bucket.
+
+#### AVL tree (indexes/avl_tree.py)
+
+Search starts at the root and at each node compares the target key with the node's key. It moves to the left child if the target is smaller, the right child if it's larger, or stops on a match. Each loop iteration goes down one level, so the number of nodes examined is at most the height of the tree. An AVL tree keeps its height at about log2(n) (at most about 1.44 log2(n)), so the expected cost is O(log n).
+
+Lines that do the work: lines 123–130 are the while loop that walks down the tree one node per iteration, lines 125 and 127 are the comparisons that choose left or right, and lines 131–132 add the number of nodes visited to both nodes_visited and comparisons. It counts one comparison per node even though the code may test both < and >, which matches the definition in base.py lines 36–37.
+
+#### B+ tree (indexes/bplus_tree.py)
+
+Search first walks from the root down to the leaf where the key belongs (_find_leaf, lines 94–102). At each internal node it uses binary search over that node's keys to pick which child to follow (_bisect_right, lines 80–92, called on line 99). Once it reaches the leaf, search (lines 166–171) uses another binary search (_bisect_left, line 168) to find the key inside the leaf and returns its values if it's there.
+
+The tree is balanced and every leaf is at the same depth, so the number of levels is about log base m of n, where m is the order (32 by default). At each level the binary search takes about log2(m) comparisons. Multiplied together that is about log2(n) comparisons, so the expected cost is O(log n), but with far fewer nodes visited than an AVL tree because each node holds many keys. Line 101 adds the number of levels visited to nodes_visited, and lines 77 and 91 add the binary search comparisons.
+
+### Q2: Why can't the hash table answer a range query without looking at every key?
+
+Because of the hash function (line 40), a hash table loses the order of the keys. Keys that are close in value, like tempos of 125 and 126, get scattered into unrelated buckets on purpose, and the bucket a key lands in says nothing about whether it is bigger or smaller than other keys. So there is no way to jump to where a range starts and walk forward. range_search (lines 79–88) has to loop over every bucket (line 82) and every key in each bucket (line 83) and check each one against the range (line 84), which costs O(n). The dict reference index has the same limitation for the same reason.
+
+### Q3: Trace inserting 10, 20, 30 into an empty AVL tree
+
+Insert 10: insert (line 102) calls _insert on an empty tree, which creates the node on line 107. The tree is just 10.
+
+Insert 20: 20 > 10, so _insert goes right (line 113) and creates 20 as 10's right child. On the way back up, _rebalance(10) (line 117) finds a balance of 0 − 1 = −1, which is allowed, so there is no rotation (line 98).
+
+Insert 30: it goes right of 10 and right of 20 (line 113 twice) and becomes 20's right child. On the way back up, _rebalance(20) finds a balance of −1, which is fine. Then _rebalance(10) computes 0 − 2 = −2 on line 87, so the right side is too tall (line 93). Line 95 checks 20's balance: it is −1, not greater than 0, so this is not the right-left case. It is the right-right case.
+
+Line 97 calls _rotate_left(10), which runs lines 75–83: 20 becomes the parent (line 75), 10 takes 20's empty left subtree as its right child (line 77), and 10 becomes 20's left child (line 78). Line 82 adds 1 to the rotations counter. The new subtree root, 20, is returned up to line 102 and becomes the root of the tree.
+
+Result: a single left rotation at 10. The tree is 20 at the root, with 10 as its left child and 30 as its right child.
+
+### Q4: In the B+ tree, what is next on a leaf for, and which methods use it?
+
+next connects each leaf to the leaf immediately to its right. Since leaves hold their keys in sorted order, this makes a sorted linked list across the bottom of the tree, so you can move through keys in order from one leaf to the next without going back up to the root. That is what makes range and prefix queries efficient in a B+ tree: find the first leaf once, then walk sideways.
+
+In the interns' code, next is defined in _Leaf (lines 28–34, set to None on line 34), kept up to date by _split_leaf when a leaf splits (lines 147–148, so the new right leaf is linked into the chain), and read by structure_info (lines 201–204) to walk the leaves and count them.
+
+range_search does not use next. It calls _collect_range (lines 179–189), which recursively visits every child of every node (line 188) and checks every key in every leaf. So in the interns' version a range query looks at the whole tree, O(n), instead of finding the first leaf and following next, which would be O(log n + k).
+
+### Q5: What does each counter in Stats count, for each index? Why are counters useful?
+
+Stats has five counters (base.py lines 33–48): comparisons, nodes_visited, rotations, splits, and resizes. Each index only uses the ones that make sense for it; the rest stay at 0.
+
+#### Unsorted list
+
+comparisons: one per entry scanned. Every search and every range query adds the full length of the list (lines 29 and 34). nodes_visited, rotations, splits, and resizes are never incremented, because there are no nodes or buckets, just one list. Insert (line 23) is a plain append and touches no counters.
+
+#### Sorted list
+
+comparisons: one per key checked. That is one per step of the binary search in _bisect_left (line 41), which insert and range_search use; one per key checked in search's scan (lines 60 and 64); and one per key walked through in range_search (line 79). nodes_visited, rotations, splits, and resizes are never incremented.
+
+#### Hash table
+
+comparisons: one per stored key checked against the target inside a bucket, during insert (counted on line 46, added on line 53) and search (counted on line 72, added on lines 74 and 76). range_search adds the total number of keys in one step (line 86). nodes_visited: one per bucket touched, once per insert or search in _bucket_for (line 39), and the number of buckets for a range query (line 87). resizes: one each time the table grows (line 66). rotations and splits are never used. Moving keys during a resize is not counted as comparisons.
+
+#### AVL tree
+
+comparisons and nodes_visited: one per node examined, on every insert path (lines 108–109), search path (lines 131–132), and node visited by a range query (lines 145–146), so for this index the two counters are always equal. rotations: one per single rotation (lines 64 and 82); a double rotation (left-right or right-left) counts as 2. splits and resizes are never used.
+
+#### B+ tree
+
+comparisons: one per step of the binary search inside a node (lines 77 and 91), used on every insert and search, plus every key in every leaf a range query checks (line 186). nodes_visited: one per node on the path down for a search (line 101) or insert (line 117), and one per node a range query visits (line 181). splits: one per leaf split (line 149) and one per internal node split (line 161). rotations and resizes are never used.
+
+#### Reference indexes (dict and bisect)
+
+They do not count anything (they set counts_operations = False in reference.py, which base.py line 66 says means no counters), so all their counters stay at 0.
+
+#### Why counters are useful when we already have timings
+
+Counters are deterministic: the same keys and queries always produce the same counts on any machine, while timings change with the hardware, background load, and noise. That means counters measure the algorithm's actual work, so we can compare it directly with big-O theory and see exactly which kind of work (comparisons, nodes visited, rotations, splits, or resizes) is higher than it should be. That is how we found our incidents, and it is also why counters should be identical across our laptops for the same code_version (Part E).
+
+## 3. Methods
+
+### Setup
+
+All measurements were run inside the provided Docker container (Python 3.13) using make experiments and make core, so everyone used the same Python version and packages. Every measurement was written to results/timings.csv through ResultsWriter, which also records the git commit (code_version), the member, and the machine. Unless stated otherwise, every configuration was run 5 times (5 replicates).
+
+### Measurement rules
+
+For every experiment, keys and queries were generated before the timer started, so we only timed the index itself. Build measurements (E1, E5, E6, E7) built a fresh index for each replicate using time_build. Query measurements called reset_stats() before each batch and timed the whole batch with time_batch, then we divided by the number of operations to get the cost per operation. In E2, E3, and E4 the index was built once (not timed) and then reused across replicates, because only the queries were being measured. Memory (memory_bytes) was measured once per configuration with build_memory_bytes, separately from timing, because tracing memory is slow. All query generation used the same seed (4300) so every index got the exact same queries.
+
+### Experiments
+
+E1, build cost vs. n: track_id keys in file order, at n = 1,000, 2,000, 5,000, 10,000, 30,000, 60,000, and all 114,000 tracks. Every index (the five main ones and the two references) was built and timed, and memory_bytes was recorded.
+
+E2, point lookup cost vs. n: the same track_id sizes as E1. For each size we made 500 lookups that all hit (hit rate 1.0) and 500 that all miss (hit rate 0.0), and timed each batch. We also recorded tree height.
+
+E3, range cost vs. selectivity: tempo keys for all tracks. For each selectivity (0.0001, 0.001, 0.01, 0.05, 0.1, and 0.25 of the distinct tempos) we made 200 range queries and timed each batch.
+
+E4, prefix cost vs. prefix length: track_name keys for all tracks, with prefix lengths 1 through 5 and 200 prefix queries per length.
+
+E5, insert order: synthetic keys from random_keys at n = 1,000, 10,000, and 100,000, inserted in each of the four orders (random, sorted, reversed, nearly sorted with 5% of positions swapped). For each we timed the build with a fresh index, recorded the height and the rotation and split counters, and timed 500 lookups that all hit.
+
+E6, B+ tree order: the B+ tree only, at orders 3, 4, 8, 16, 32, 64, 128, 256, and 512. For each order we timed building it on all track_ids (with memory), 500 hits and 500 misses, and 200 range queries at selectivity 0.01 on a separate B+ tree built on tempo.
+
+E7, many rows sharing a key: track_genre and popularity, which have few distinct values, compared with track_id, which is almost all unique. For each column we timed the build (with memory), 500 hits, and 500 misses. Popularity keys are integers from 0 to 100, so its misses were numbers outside that range. For popularity we also ran 200 range queries at selectivities 0.01, 0.05, 0.1, and 0.25.
+
+### Synthetic data and queries (Part B)
+
+We implemented the five functions in datagen/synthetic.py, and all randomness comes from random.Random(seed) so the same seed always gives the same output. random_keys makes n distinct random strings of a fixed length. arrange puts keys in random, sorted, reversed, or nearly sorted order (sorted, then a set number of random swaps). point_queries makes lookups where exactly round(n_queries × hit_rate) are hits and the rest are random strings guaranteed not to be keys. range_queries picks ranges that cover exactly w = max(1, round(selectivity × number of distinct keys)) distinct keys. prefix_queries takes the first few characters of randomly chosen keys that are long enough, so every prefix matches at least one key. tests/test_synthetic.py passes.
+
+### How we summarized results
+
+For each configuration we report the median of the 5 replicates, with the interquartile range (IQR) to show how much they varied, because the median is less affected by one slow run than the mean. To estimate how cost grows with n, we fit a straight line to log(cost) vs. log(n) and report the slope: about 0 means O(1), about 1 means O(n), and about 2 means O(n²). We used the counters and structure_info() alongside the timings because they don't depend on the machine. [Team: confirm this matches what every notebook does, e.g. median and IQR, and least-squares slopes on log-log axes.]
+
+### Machines
+
+We used four laptops, one per team member. All four are Apple Silicon MacBooks running macOS.
+
+kenza-mba (Kenza): MacBook Air 2022 with an Apple M2, 8 cores, 16 GB RAM, macOS 26.6.2. Docker was given 8 CPUs and 8 GB of memory. Plugged in.
+neil-mac (Neil): MacBook Neo with an Apple A18 Pro, 6 cores, 8 GB RAM, macOS. Docker was given 6 CPUs and 4 GB of memory. On battery.
+chloe-mac (Chloe): MacBook Air with an Apple M5, 10 cores, 24 GB RAM, macOS Tahoe 26.7. Docker was given 10 CPUs and 8 GB of memory. On battery.
+vicente-mba (Vicente): MacBook Air 2020 with an Apple M1, 8 cores, 8 GB RAM, macOS 26.4. Docker was given 8 CPUs and 4 GB of memory. On battery.
+
+Three of the four laptops ran on battery, which can make timings slower and noisier than when plugged in. We keep this in mind when comparing timings across machines in Section 6, and we rely on the counters, which don't depend on the machine, wherever possible.
+
+## 4. Results
+
+[To write after all fixes are in and every experiment has been rerun on the final commit: one subsection per experiment. For each, the figure(s), the numbers that matter, how they compare with theory, and any crossover points. Use the fixed code for this section.]
+
+### E1: Build cost vs. n
+
+[fill in]
+
+### E2: Point lookup cost vs. n
+
+[fill in]
+
+### E3: Range cost vs. selectivity
+
+[fill in]
+
+### E4: Prefix cost vs. prefix length
+
+[fill in]
+
+### E5: Insert order
+
+[fill in]
+
+### E6: B+ tree order
+
+[fill in]
+
+### E7: Many rows sharing a key
+
+[fill in]
+
+## 5. Performance incidents (Part D)
+
+[Other incident summaries to be added by their authors.]
+
+### INC-02: Hash table build cost grows with n² instead of n
+
+Building the hash table got much slower as n grew, because _grow (hash_table.py line 60) added a fixed 1,024 buckets every time the table filled up instead of growing in proportion to its size. That made it resize about every 768 inserts, and every resize moves every key, so building the table cost O(n²) instead of O(n). In E1 with all 114,000 track IDs, the table resized 117 times and the fitted log-log slope of build time vs. n was 1.72. We changed line 60 to double the number of buckets (commit 305b687). After the fix, the same E1 build needed only 14 resizes, the slope dropped to 1.05 (matching O(n)), and the build took 84.5 ms instead of 1,629 ms. make test still passes.
+
+[Key figure: analysis/inc02_hash_table_e1.png, build time vs. n and resizes vs. n, before and after the fix.]
+
+## 6. Hardware comparison (Part E)
+
+[Answers to the five Part E questions, using the CORE rows from every member.]
+
+### Q1: Are the counters identical across machines for the same code_version?
+
+[fill in]
+
+### Q2: How much faster is the fastest machine than the slowest, and is the ratio the same across indexes and operations?
+
+[fill in]
+
+### Q3: Does the ranking of the indexes change from machine to machine?
+
+[fill in]
+
+### Q4: How variable are repeated runs on each machine, and is any machine noisier?
+
+[fill in]
+
+### Q5: How much RAM does each index need, and could RAM differences between machines matter?
+
+[fill in]
+
+## 7. Recommendations
+
+[Per feature: the recommended index, the runner-up, the trade-offs (build cost, memory, query types it cannot serve), and what would change your answer (much larger data, a different query mix, data on disk instead of in memory). Discuss what the reference indexes reveal.]
+
+### F1: Track page (point lookup by track_id)
+
+[fill in]
+
+### F2: Search-as-you-type (prefix on track_name)
+
+[fill in]
+
+### F3: Workout mode (range on tempo)
+
+[fill in]
+
+### F4: Catalog import (insert/build)
+
+[fill in]
+
+### What the reference indexes reveal
+
+[fill in]
+
+## 8. Limitations
+
+[What your experiments cannot tell you, and what you would measure next.]
+
+## Appendix
+
+### Team contributions
+
+[Who did what.]
+
+### AI assistance
+
+[Which tools, for what, and what you verified yourselves.]
