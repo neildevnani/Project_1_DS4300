@@ -50,7 +50,7 @@ class SortedListIndex(Index):
             self._values.insert(pos, [value])
         self._size += 1
 
-     def search(self, key: Any) -> list[Any]:
+    def search(self, key: Any) -> list[Any]:
         pos = self._bisect_left(key)    # binary search for where key would be
         if pos < len(self._keys) and self._keys[pos] == key:    # key is actually there
             return self._values[pos]
