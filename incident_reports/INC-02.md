@@ -56,7 +56,23 @@ It still gives the right answers because every key still gets moved into the cor
 
 ## Fix
 
-We changed line 60 in _grow so the table doubles its number of buckets instead of adding 1,024. The line went from "new_capacity = len(self._buckets) + self.GROWTH_STEP" to "new_capacity = len(self._buckets) * 2".
+We changed line 60 in _grow so the table doubles its number of buckets instead of adding 1,024 every time it grows. The diff below is the output of git diff 37403b8..305b687 -- indexes/
+
+```diff
+diff --git a/indexes/hash_table.py b/indexes/hash_table.py
+index d6de160..ca5e395 100644
+--- a/indexes/hash_table.py
++++ b/indexes/hash_table.py
+@@ -57,7 +57,7 @@ class HashTableIndex(Index):
+ 
+     def _grow(self) -> None:
+         """Move every entry into a larger list of buckets."""
+-        new_capacity = len(self._buckets) + self.GROWTH_STEP
++        new_capacity = len(self._buckets) * 2
+         new_buckets: list[list[tuple[Any, list[Any]]]] = [[] for _ in range(new_capacity)]
+         for bucket in self._buckets:
+             for entry in bucket:
+```
 
 Commit: 305b687
 
