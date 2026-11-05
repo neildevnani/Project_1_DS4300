@@ -93,7 +93,8 @@ E1 rotation = 12.95 into 0.55
 E5 = random 26 14.7 into 0.7, sorted & reversed 11.4 into 1.00, nearly_sorted 10.4 into 1.20
 Height = random 26 into 20, sorted 21 into 17
 E1 build = 1262 into 442ms
-Make test still passes. 
+Make test still passes.
+
 ## Impact on recommendations
 
 F4, the build is still slower than B+ tree so should still use B+ but it is not as poor as it seemed is better but
