@@ -1,4 +1,4 @@
-# Practical 1 report: [team name]
+# Practical 1 report: KNCV
 
 Submit as a PDF on Gradescope. Aim for 10–15 pages of content plus appendices. Every figure needs labeled axes with units, a caption saying what to notice, and a pointer to the notebook cell that made it.
 
