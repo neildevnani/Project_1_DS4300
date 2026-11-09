@@ -229,7 +229,7 @@ Building the hash table got much slower as n grew, because _grow (hash_table.py 
 
 ### F1: Track page (point lookup by track_id)
 
-First Recommendation is hash table, runner up is AVL tree. Because it is a point look up by track_id (looking up exact IDs) hash table would be the fastest. It took 0.57 per hit and 0.41 per miss.
+First Recommendation is hash table, runnerup is AVL tree. Because it is a point look up by track_id (looking up exact IDs) hash table would be the fastest. It took 0.57 per hit and 0.41 per miss.
 
 The hash tables cost stayed relatively flat compared to other methods. Also it doesn't check the entire database it calcs where the student ID is stored, jumping directly into a bucket. 
 
@@ -238,7 +238,7 @@ However, hash tables use a lot of memory and doesn't allow for range queries. So
 
 ### F2: Search-as-you-type (prefix on track_name)
 
-First Recommendation is B+ tree , runner up is sorted list. Because you are looking up every title that starts with a specific prefix (prefix query), acts similarly to a range where you don't have to start at the beginning as it is already partially sorted, each node also holds many keys so fewer nodes need to be visited. 
+First Recommendation is B+ tree , runnerup is sorted list. Because you are looking up every title that starts with a specific prefix (prefix query), acts similarly to a range where you don't have to start at the beginning as it is already partially sorted, each node also holds many keys so fewer nodes need to be visited. 
 
 Cost dropped as prefix got longer, as the shorter the prefix the more track name options there are, it also builds faster and is able to add new track names without needing to shift lists.
 
@@ -278,3 +278,4 @@ What can be measured next is that we didnt work with a massive n, with more data
 ### AI assistance
 
 [Which tools, for what, and what you verified yourselves.]
+claude helped with inc-04 (fix section ) - to get the code for diff [chloe]
