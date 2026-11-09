@@ -229,27 +229,45 @@ Building the hash table got much slower as n grew, because _grow (hash_table.py 
 
 ### F1: Track page (point lookup by track_id)
 
-[fill in]
+First Recommendation is hash table, runnerup is AVL tree. Because it is a point look up by track_id (looking up exact IDs) hash table would be the fastest. It took 0.57 per hit and 0.41 per miss.
+
+The hash tables cost stayed relatively flat compared to other methods. Also it doesn't check the entire database it calcs where the student ID is stored, jumping directly into a bucket. 
+
+However, hash tables use a lot of memory and doesn't allow for range queries. So the answer would change if these catalogs were too large to fit in memory and was stored in a disk.
+
 
 ### F2: Search-as-you-type (prefix on track_name)
 
-[fill in]
+First Recommendation is B+ tree , runnerup is sorted list. Because you are looking up every title that starts with a specific prefix (prefix query), acts similarly to a range where you don't have to start at the beginning as it is already partially sorted, each node also holds many keys so fewer nodes need to be visited. 
+
+Cost dropped as prefix got longer, as the shorter the prefix the more track name options there are, it also builds faster and is able to add new track names without needing to shift lists.
+
+However, if the node can only hold a small amount of keys, then all processes will slow down. If it didnt get updates and no new information got added or removed, sorted list would be good to use. 
 
 ### F3: Workout mode (range on tempo)
 
-[fill in]
+First Recommendation is B+ tree , runnerup is sorted list, because a range query needs to be performed this indexing allows the system to find the where the beginning of the range is located and stops reading when it reaches the end (B+ trees are linked this is done very easily)
+
+Cost grows with size of the range, and sorted lists are slightly faster when querying, but the built time was much slower and updating would be difficult. If the tempo index were built once and never updated,                                                                                       
+the sorted list would be the better choice.
 
 ### F4: Catalog import (insert/build)
 
-[fill in]
+First Recommendation is B+ tree , runnerup is hash table, its the fastest index to build that will help keep the keys ordered white built time not being affected that much by inserts.
+
+A drawback is that Building is faster when using the hash table however it can only perform lookups, whereas B+ allows for querying. If the new tracks were to arrive presorted and the index was rebuilt a sorted list could be used however the larger the worse it would perform. 
 
 ### What the reference indexes reveal
 
-[fill in]
+they run the same algorithm in c, therefor they don't show much of runtime/performance cost of executing Python code, rather than the algorithm itself
+the python dict is around 2x faster than hashtable and 4x faster to build
+bisect is 3x faster than sorted lists. But bisects build slowly, inserts take a long time.
+
+Reveals that c makes every index a constant factor faster, but doesn't change the efficiency of an algorithm as the input size grows. So our recommendations still would be used in a different language
 
 ## 8. Limitations
 
-[What your experiments cannot tell you, and what you would measure next.]
+What can be measured next is a massive n, with more data it would be interesting to see the growth rates hold. Also because there are other apps open on computers or plugged vs not plugged in, it all skews the data slightly. and it should be kept more consistent
 
 ## Appendix
 
@@ -260,3 +278,4 @@ Building the hash table got much slower as n grew, because _grow (hash_table.py 
 ### AI assistance
 
 [Which tools, for what, and what you verified yourselves.]
+claude helped with inc-04 (fix section ) - to get the code for diff [chloe]
