@@ -267,7 +267,7 @@ Reveals that c makes every index a constant factor faster, but doesn't change th
 
 ## 8. Limitations
 
-What can be measured next is that we didnt work with a massive n, with more data it would be interesting to see the growth rates hold. 
+What can be measured next is a massive n, with more data it would be interesting to see the growth rates hold. Also because there are other apps open on computers or plugged vs not plugged in, it all skews the data slightly. and it should be kept more consistent
 
 ## Appendix
 
