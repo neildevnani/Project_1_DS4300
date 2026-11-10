@@ -208,9 +208,7 @@ Building the hash table got much slower as n grew, because _grow (hash_table.py 
 
 ### INC-03: B+ tree range and prefix queries scan the whole tree
 
-INC-03 documents a bug where the B+ tree's `_collect_range` recursed into every child without checking whether it could overlap the query range. As a result, every range and prefix query scanned the whole tree: 45,653 comparisons for a 1% range query instead of about 474. Results were still correct, so the correctness-only tests missed it, but E3 exposed it because cost stayed flat across all selectivities. The fix descends once to the leaf where `lo` belongs, then walks the leaf `next` pointers until it passes `hi`. That restores O(log n + k) behavior and cuts range queries from 4.90 ms to 0.19 ms (about 26×) and prefix queries from 10.4 ms to 0.07 ms. With the fix, the B+ tree matches the sorted list on comparisons and becomes a real candidate for F2 and F3.
-
-
+INC-03 is documenting a bug where our B+ tree's `_collect_range` recursed into every single child skipping the step where it checks if it could overlap the range of the query. Because of this, every range and prefix based query scanned the entire tree. 45,653 comparisons for a 1% range query instead of only 474 as it was supposed to do. The results were still correct, so the correctness only tests missed it, but E3 exposed the bug because cost stayed flat across all selectivites [incident_reports/INC-03_e3.png]. The fix descends once to the leaf where `lo` belongs, then it walks the `next` pointers until it passes `hi`. That restores the behavior of 0(log n + k) and cuts the range queries from 4.90 ms to 0.19ms (26x) and prefix queries from 10.4ms to 0.07ms. With this fix pushed, the B+ tree matches the sorted list and becomes a candidate for F2 and F3. 
 
 ## 6. Hardware comparison (Part E)
 
