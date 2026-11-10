@@ -308,20 +308,18 @@ CORE does not record memory, so we used E1's memory_bytes from neil-mac on the f
 
 ## 7. Recommendations
 
-[Per feature: the recommended index, the runner-up, the trade-offs (build cost, memory, query types it cannot serve), and what would change your answer (much larger data, a different query mix, data on disk instead of in memory). Discuss what the reference indexes reveal.]
-
 ### F1: Track page (point lookup by track_id)
 
-First Recommendation is hash table, runnerup is AVL tree. Because it is a point look up by track_id (looking up exact IDs) hash table would be the fastest. It took 0.57 per hit and 0.41 per miss.
+First Recommendation is hash table, runnerup is AVL tree. Because it is a point look up by track_id (looking up exact IDs) hash table would be the fastest. It took 0.67 per hit and 0.49 per miss.
 
-The hash tables cost stayed relatively flat compared to other methods. Also it doesn't check the entire database it calcs where the student ID is stored, jumping directly into a bucket. 
+The hash tables cost stayed relatively flat compared to other methods. Also it doesn't check the entire database it calcs where the track ID is stored, jumping directly into a bucket. 
 
 However, hash tables use a lot of memory and doesn't allow for range queries. So the answer would change if these catalogs were too large to fit in memory and was stored in a disk.
 
 
 ### F2: Search-as-you-type (prefix on track_name)
 
-First Recommendation is B+ tree , runnerup is sorted list. Because you are looking up every title that starts with a specific prefix (prefix query), acts similarly to a range where you don't have to start at the beginning as it is already partially sorted, each node also holds many keys so fewer nodes need to be visited. 
+First Recommendation is B+ tree , runnerup is sorted list. Because you are looking up every title that starts with a specific prefix (prefix query), acts similarly to a range where you don't have to start at the beginning as it is already sorted, each node also holds many keys so fewer nodes need to be visited. 
 
 Cost dropped as prefix got longer, as the shorter the prefix the more track name options there are, it also builds faster and is able to add new track names without needing to shift lists.
 
