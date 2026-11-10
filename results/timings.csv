@@ -7149,7 +7149,6 @@ f181071b5617,2026-11-01T23:17:24+00:00,vicente,vicente-mba,c8ec36c,3.13.16,Linux
 28ca70a057a6,2026-11-05T17:26:00+00:00,neil,neil-mac,65c95ad,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,6,3.82,True,0,CORE,spotify,track_id,file,114000,point_miss,,1000,4,288417,ref_bisect,,,,,,,,,
 28ca70a057a6,2026-11-05T17:26:00+00:00,neil,neil-mac,65c95ad,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,6,3.82,True,0,CORE,spotify,tempo,file,114000,range,0.01,200,4,3208333,ref_bisect,,,,,,,,,
 28ca70a057a6,2026-11-05T17:26:01+00:00,neil,neil-mac,65c95ad,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,6,3.82,True,0,CORE,spotify,track_name,file,113999,prefix,3,200,4,1649417,ref_bisect,,,,,,,,,
-<<<<<<< HEAD
 5c793ce3865c,2026-11-09T18:27:59+00:00,vicente,vicente-mba,65bfead,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,8,3.82,True,0,CORE,spotify,track_id,file,10000,build,,10000,0,1381333,unsorted_list,,0,0,0,0,0,,,
 5c793ce3865c,2026-11-09T18:27:59+00:00,vicente,vicente-mba,65bfead,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,8,3.82,True,0,CORE,spotify,track_id,file,114000,build,,114000,0,19090000,unsorted_list,,0,0,0,0,0,,,
 5c793ce3865c,2026-11-09T18:28:06+00:00,vicente,vicente-mba,65bfead,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,8,3.82,True,0,CORE,spotify,track_id,file,114000,point_hit,,1000,0,6684420337,unsorted_list,,114000000,0,0,0,0,,,
@@ -7360,7 +7359,6 @@ f181071b5617,2026-11-01T23:17:24+00:00,vicente,vicente-mba,c8ec36c,3.13.16,Linux
 5c793ce3865c,2026-11-09T18:32:01+00:00,vicente,vicente-mba,65bfead,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,8,3.82,True,0,CORE,spotify,track_id,file,114000,point_miss,,1000,4,615209,ref_bisect,,,,,,,,,
 5c793ce3865c,2026-11-09T18:32:02+00:00,vicente,vicente-mba,65bfead,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,8,3.82,True,0,CORE,spotify,tempo,file,114000,range,0.01,200,4,6166625,ref_bisect,,,,,,,,,
 5c793ce3865c,2026-11-09T18:32:03+00:00,vicente,vicente-mba,65bfead,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,8,3.82,True,0,CORE,spotify,track_name,file,113999,prefix,3,200,4,3042417,ref_bisect,,,,,,,,,
-=======
 1ec1c7b68f14,2026-11-09T18:20:48+00:00,kenza,kenza-mba,65bfead,3.13.16,Linux 7.0.12-linuxkit,aarch64,unknown,8,7.75,True,0,CORE,spotify,track_id,file,10000,build,,10000,0,896292,unsorted_list,,0,0,0,0,0,,,
 1ec1c7b68f14,2026-11-09T18:20:48+00:00,kenza,kenza-mba,65bfead,3.13.16,Linux 7.0.12-linuxkit,aarch64,unknown,8,7.75,True,0,CORE,spotify,track_id,file,114000,build,,114000,0,10625167,unsorted_list,,0,0,0,0,0,,,
 1ec1c7b68f14,2026-11-09T18:20:51+00:00,kenza,kenza-mba,65bfead,3.13.16,Linux 7.0.12-linuxkit,aarch64,unknown,8,7.75,True,0,CORE,spotify,track_id,file,114000,point_hit,,1000,0,2954142001,unsorted_list,,114000000,0,0,0,0,,,
@@ -7571,9 +7569,6 @@ f181071b5617,2026-11-01T23:17:24+00:00,vicente,vicente-mba,c8ec36c,3.13.16,Linux
 1ec1c7b68f14,2026-11-09T18:22:22+00:00,kenza,kenza-mba,65bfead,3.13.16,Linux 7.0.12-linuxkit,aarch64,unknown,8,7.75,True,0,CORE,spotify,track_id,file,114000,point_miss,,1000,4,304958,ref_bisect,,,,,,,,,
 1ec1c7b68f14,2026-11-09T18:22:22+00:00,kenza,kenza-mba,65bfead,3.13.16,Linux 7.0.12-linuxkit,aarch64,unknown,8,7.75,True,0,CORE,spotify,tempo,file,114000,range,0.01,200,4,3493208,ref_bisect,,,,,,,,,
 1ec1c7b68f14,2026-11-09T18:22:23+00:00,kenza,kenza-mba,65bfead,3.13.16,Linux 7.0.12-linuxkit,aarch64,unknown,8,7.75,True,0,CORE,spotify,track_name,file,113999,prefix,3,200,4,1881167,ref_bisect,,,,,,,,,
-<<<<<<< HEAD
->>>>>>> 37641de65d797fafbc55d3d4a0914f71169e2356
-=======
 c548dfefbf42,2026-11-10T02:33:10+00:00,neil,neil-mac,ded5366,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,6,3.82,True,0,E3_range_tempo,spotify,tempo,file,114000,range,0.0001,200,0,493880000,unsorted_list,,22800000,0,0,0,0,,,
 c548dfefbf42,2026-11-10T02:33:11+00:00,neil,neil-mac,ded5366,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,6,3.82,True,0,E3_range_tempo,spotify,tempo,file,114000,range,0.0001,200,1,598241167,unsorted_list,,22800000,0,0,0,0,,,
 c548dfefbf42,2026-11-10T02:33:11+00:00,neil,neil-mac,ded5366,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,6,3.82,True,0,E3_range_tempo,spotify,tempo,file,114000,range,0.0001,200,2,478685125,unsorted_list,,22800000,0,0,0,0,,,
@@ -8414,7 +8409,6 @@ acf70c256645,2026-11-10T02:37:28+00:00,neil,neil-mac,ded5366,3.13.16,Linux 7.0.1
 acf70c256645,2026-11-10T02:37:29+00:00,neil,neil-mac,ded5366,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,6,3.82,True,0,E7_duplicate_keys,spotify,track_id,file,114000,build,,114000,4,891521543,ref_bisect,,,,,,,,8277904,
 acf70c256645,2026-11-10T02:37:29+00:00,neil,neil-mac,ded5366,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,6,3.82,True,0,E7_duplicate_keys,spotify,track_id,file,114000,point_hit,1.0,500,4,351125,ref_bisect,,,,,,,,,
 acf70c256645,2026-11-10T02:37:29+00:00,neil,neil-mac,ded5366,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,6,3.82,True,0,E7_duplicate_keys,spotify,track_id,file,114000,point_miss,0.0,500,4,75375,ref_bisect,,,,,,,,,
->>>>>>> 3ef0cd9eae1ca8d596c0c40dce3e8382204dd12b
 6f0ffc7443eb,2026-11-10T03:05:34+00:00,neil,neil-mac,5b5a8da,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,6,3.82,True,0,E1_build_track_id,spotify,track_id,file,1000,build,,1000,0,106541,unsorted_list,,0,0,0,0,0,,65664,
 6f0ffc7443eb,2026-11-10T03:05:34+00:00,neil,neil-mac,5b5a8da,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,6,3.82,True,0,E1_build_track_id,spotify,track_id,file,1000,build,,1000,1,86375,unsorted_list,,0,0,0,0,0,,65664,
 6f0ffc7443eb,2026-11-10T03:05:34+00:00,neil,neil-mac,5b5a8da,3.13.16,Linux 7.0.14-linuxkit,aarch64,unknown,6,3.82,True,0,E1_build_track_id,spotify,track_id,file,1000,build,,1000,2,87708,unsorted_list,,0,0,0,0,0,,65664,
