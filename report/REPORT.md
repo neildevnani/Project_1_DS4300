@@ -193,6 +193,14 @@ Three of the four laptops ran on battery, which can make timings slower and nois
 
 [Other incident summaries to be added by their authors.]
 
+### INC-01: Sorted list point lookups grow with n instead of log n
+Point lookups on the sorted list got slower as n grew, because search (sorted_list.py lines 57–63) walked the key list from the start instead of using the class’s own binary search, _bisect_left, which insert and range_search already used. That made each lookup O(n) instead of O(log n). In E2 at n = 114,000, a hit took 46,119 comparisons and about 3,058 µs, against about 17 comparisons expected, and the fitted log-log slope of comparisons vs. n was 0.96. The counters were identical on all four machines in the original CORE runs, so this was the algorithm, not noise. We replaced the loop with _bisect_left plus an equality check (commit 09fddb5). After the fix, a hit took 16.5 comparisons and 1.94 µs (about 1,600× faster), the slope dropped to 0.11 (what log₂ n looks like on log-log axes over this range), and make test still passes. The remaining ~2.8× gap to ref_bisect is the constant-factor cost of running binary search in Python rather than C.
+
+![INC-01: comparisons per hit before and after the fix](../incident_reports/inc01_before_after.png)
+
+*Figure X: comparisons per point hit for `sorted_list` in E2, before (f6f773e) and after (09fdd)
+
+
 ### INC-02: Hash table build cost grows with n² instead of n
 
 Building the hash table got much slower as n grew, because _grow (hash_table.py line 60) added a fixed 1,024 buckets every time the table filled up instead of growing in proportion to its size. That made it resize about every 768 inserts, and every resize moves every key, so building the table cost O(n²) instead of O(n). In E1 with all 114,000 track IDs, the table resized 117 times and the fitted log-log slope of build time vs. n was 1.72. We changed line 60 to double the number of buckets (commit 305b687). After the fix, the same E1 build needed only 14 resizes, the slope dropped to 1.05 (matching O(n)), and the build took 84.5 ms instead of 1,629 ms. make test still passes.
