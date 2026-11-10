@@ -159,35 +159,80 @@ Three of the four laptops ran on battery, which can make timings slower and nois
 
 ## 4. Results
 
-[To write after all fixes are in and every experiment has been rerun on the final commit: one subsection per experiment. For each, the figure(s), the numbers that matter, how they compare with theory, and any crossover points. Use the fixed code for this section.]
+All results in this section come from neil-mac on the final commit 94403ce, which includes all four fixes. Each number is the median of 5 replicates, and slopes are least-squares fits on log-log axes. Figures are made in analysis/results.ipynb and saved in analysis/figures/.
 
 ### E1: Build cost vs. n
 
-[fill in]
+![E1 build time vs n](../analysis/figures/e1_build.png)
+
+*Figure X: build time (ms) vs. n (keys) on log-log axes for every index, with the fitted slope in the legend. Lines with slope near 1 are O(n); the sorted list and ref_bisect are steeper and cross above the AVL tree at large n. Made in analysis/results.ipynb, E1 cell.*
+
+At n = 114,000 the unsorted list built fastest (9.9 ms), followed by ref_dict (17.5 ms), the hash table (76.8 ms), the B+ tree (223 ms), the AVL tree (666 ms), ref_bisect (862 ms) and the sorted list (989 ms). The unsorted list (slope 0.99), hash table (1.05) and ref_dict (1.01) match the expected O(n). The AVL tree (1.14) and B+ tree (1.13) match O(n log n), since the log factor adds only about 0.1 to the slope over this range. The sorted list (1.53) and ref_bisect (1.66) grow faster than the others, as expected from shifting the list on every insert. They fall short of a slope of 2 because the shifting is done by fast C code, so it only starts to dominate at large n.
+
+This produces a crossover. The AVL tree is the slowest index to build up to n = 30,000, but both list-based ordered indexes overtake it around n = 60,000. By n = 114,000 the AVL tree ranks 5th of 7, ahead of ref_bisect and the sorted list. Memory per key ranged from 65 bytes (unsorted list) to 195 bytes (hash table, whose empty buckets cost space); the B+ tree used 80 and the AVL tree 115.
 
 ### E2: Point lookup cost vs. n
 
-[fill in]
+![E2 point lookup time vs n](../analysis/figures/e2_lookup.png)
+
+*Figure X: time per point hit (left) and miss (right) in µs vs. n on log-log axes, with fitted slopes. Only the unsorted list grows linearly; every other index stays nearly flat. Made in analysis/results.ipynb, E2 cell.*
+
+The unsorted list is the only index whose lookups grow with n (slope 1.02 for hits, 1.04 for misses), reaching about 2,100 µs per lookup at full size, with exactly n = 114,000 comparisons for both hits and misses. That is the expected O(n) full scan: search must collect every duplicate, so it cannot stop early.
+
+Every other index stayed between 0.2 and 2.1 µs. At n = 114,000, ref_dict was fastest for hits (0.29 µs), then the hash table (0.67), ref_bisect (0.72), the AVL tree (1.38), the sorted list (1.88) and the B+ tree (2.09). The counters confirm the theory. The hash table needed about 1.3 comparisons per hit at every size, which is O(1). The sorted list, AVL tree and B+ tree each needed 15–17 comparisons, close to log₂(114,000) ≈ 17, which is O(log n). The fixed sorted list now matches this (16.5 comparisons per hit, compared with 46,119 before INC-01).
+
+The hash table and ref_dict timings still rose slightly with n (slopes 0.19 and 0.33) even though their comparison counts stayed constant. The likely cause is the CPU cache: a larger table no longer fits in fast cache memory, so each lookup waits longer for memory without doing more work. The only rank change across sizes was a near-tie at full size, where the hash table (0.67 µs) moved just ahead of ref_bisect (0.72 µs).
 
 ### E3: Range cost vs. selectivity
 
-[fill in]
+![E3 range query time vs selectivity](../analysis/figures/e3_range.png)
+
+*Figure X: time per range query (µs) vs. selectivity on log-log axes, n = 114,000 tempo keys. Ordered indexes grow with the size of the range; the hash table, ref_dict and unsorted list stay flat at the cost of a full scan. Made in analysis/results.ipynb, E3 cell.*
+
+The ordered indexes match the expected O(log n + k). At the smallest selectivity (0.0001), ref_bisect took 1.0 µs, the sorted list 2.1 µs, the B+ tree 2.5 µs and the AVL tree 4.4 µs, using only 19–22 comparisons, roughly log n plus a few matches. Their cost then grew in proportion to the range: at selectivity 0.25 the sorted list took 1,215 µs and 11,430 comparisons. The B+ tree consistently took about half the time of the AVL tree (1,625 vs. 3,536 µs at 0.25), because it walks the leaf chain instead of visiting tree nodes one at a time. This also confirms the INC-03 fix: B+ tree range comparisons were 474 at selectivity 0.01, compared with 45,653 before.
+
+The unordered indexes stayed flat at the cost of a full scan, as expected: the unsorted list at 2,600–3,050 µs, the hash table at 2,700–3,800 µs, and ref_dict at 1,200–2,050 µs. ref_bisect was the fastest index at every selectivity, about 2–3× faster than the sorted list with the same growth. The gap between ordered and unordered indexes narrows as ranges get larger. At selectivity 0.25 the AVL tree (3,536 µs) was nearly as slow as the hash table's full scan (3,809 µs), so for very wide ranges an ordered index loses most of its advantage.
 
 ### E4: Prefix cost vs. prefix length
 
-[fill in]
+![E4 prefix query time vs prefix length](../analysis/figures/e4_prefix.png)
+
+*Figure X: time per prefix query (µs, log scale) vs. prefix length on track_name, n = 114,000. Ordered indexes get about 100× faster as the prefix lengthens and fewer titles match; unordered indexes stay flat. Made in analysis/results.ipynb, E4 cell.*
+
+Prefix queries behave like range queries, because base.py turns each prefix into a range. For the ordered indexes, cost depends on how many titles match. A 1-character prefix matches thousands of titles: ref_bisect took 122 µs, the B+ tree 623 µs, the sorted list 677 µs and the AVL tree 1,278 µs. A 5-character prefix matches only a few, and the same indexes took 2.7, 5.9, 6.2 and 10.6 µs. The unordered indexes cannot narrow the search and stayed flat: ref_dict at about 2,600 µs, the unsorted list at 3,900–4,350 µs, and the hash table at 9,400–12,100 µs, the slowest of all because it scans every bucket. Even for 1-character prefixes, every ordered index beat every unordered one.
 
 ### E5: Insert order
 
-[fill in]
+![E5 build time by insert order](../analysis/figures/e5_order.png)
+
+*Figure X: build time (ms, log scale) for each index and insert order at n = 100,000 synthetic keys. Only the list-based ordered indexes are sensitive to order; reversed order is slowest for them because every insert shifts the whole list. Made in analysis/results.ipynb, E5 cell.*
+
+Insert order mattered only for the two list-based ordered indexes. The sorted list took 131 ms in sorted order, 258 ms nearly sorted, 1,236 ms random and 2,144 ms reversed, a 16× spread; ref_bisect ranged from 27 to 2,055 ms. In sorted order every new key goes at the end, so nothing shifts. In reversed order every key goes at the front and shifts the whole list, which is the O(n²) worst case.
+
+The trees were insensitive to order, as theory predicts for self-balancing structures. AVL build times stayed within 590–679 ms and B+ tree times within 166–223 ms. The AVL tree did the most rotations on nearly sorted input (120,055) and the fewest on random input (70,144), but its height stayed between 17 and 20 in every case, close to log₂(100,000) ≈ 17. The B+ tree had a height of 4 for every order and split 4,829–6,661 nodes. The unsorted list (8–9 ms) and ref_dict (14–17 ms) did not care about order at all. Point lookups after building were essentially unaffected by order for every index.
 
 ### E6: B+ tree order
 
-[fill in]
+![E6 effect of B+ tree order](../analysis/figures/e6_order.png)
+
+*Figure X: B+ tree build time (ms), point lookup time (µs) and range query time (µs) vs. tree order (max keys per node, log scale). All three improve steeply up to order 32–64 and then level off. Made in analysis/results.ipynb, E6 cell.*
+
+Increasing the order (keys per node) made the tree shorter: height fell from 14 at order 3 to 4 at order 32 and 2 at order 512. Every cost improved with it up to about order 64 and then leveled off. Build time fell from 542 ms to about 210 ms, memory from 28.9 MB to 8.5 MB, point hits from 4.9 µs to 2.0 µs, and range queries at selectivity 0.01 from 168 µs to 61 µs. Order 64 was best for hits (1.97 µs) and ranges (60.9 µs).
+
+The flattening matches theory. The tree has about log_m(n) levels, and each level does a binary search over m keys, so the total comparisons stay around log₂(n) whatever the order. A higher order only saves time by visiting fewer nodes, and once the tree is 3 levels deep there are few hops left to save. The default order of 32 was within about 10% of the best on every measure.
 
 ### E7: Many rows sharing a key
 
-[fill in]
+![E7 point hits by key column](../analysis/figures/e7_duplicates.png)
+
+*Figure X: time per point hit (µs, log scale) for each index on track_genre and popularity (few distinct values) and track_id (almost all unique). Every index except the unsorted list is faster on the columns with many duplicates, because it stores far fewer distinct keys. Made in analysis/results.ipynb, E7 cell.*
+
+Keys with many duplicates made every index except the unsorted list faster, because each duplicate is appended to an existing key's list of values. The structure only stores about 101 distinct popularity values or 114 genres, instead of about 114,000 track IDs. The biggest gains were in build time for the list-based ordered indexes: the sorted list took 58 ms on genre or popularity against 1,046 ms on track_id (18×), and ref_bisect 17–22 ms against 932 ms. The AVL tree (211–236 vs. 788 ms) and B+ tree (83–87 vs. 272 ms) gained about 3×. The unsorted list stays at one entry per row, so its build time (9–12 ms) did not change.
+
+Point hits were also faster on duplicate-heavy keys, for example 0.33 µs on genre against 1.51 µs on track_id for the AVL tree. Returning a long list of row ids costs nothing extra, because search returns the stored list without copying it. The unsorted list still scanned all 114,000 rows on every lookup (1,300–2,500 µs).
+
+Range queries on popularity show that a full scan only costs O(number of distinct keys) for indexes that group duplicates. At selectivity 0.01, the hash table (10.8 µs) and ref_dict (5.4 µs) were nearly as fast as the ordered indexes (2.8–4.8 µs), because there were only about 101 keys to check. The unsorted list, which scans every row, took 1,820 µs. With so few distinct keys, the choice of index matters much less than whether it groups duplicates.
+
 
 ## 5. Performance incidents (Part D)
 
