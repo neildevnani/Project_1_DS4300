@@ -281,7 +281,17 @@ What can be measured next is a massive n, with more data it would be interesting
 
 ### Team contributions
 
-[Who did what.]
+**Part A:** Kenza answered the questions for the unsorted list and AVL tree, Neil for the hash table, Chloe for the B+ tree, and Vicente for the sorted list.
+
+**Part B:** Kenza wrote `random_keys`, `arrange`, and `point_queries`. Neil wrote `range_queries` and `prefix_queries`.
+
+**Part C:** Chloe wrote E1–E4 and Vicente wrote E5–E7. Neil ran the final E1–E7 measurements on neil-mac.
+
+**Part D:** Chloe investigated the AVL tree (INC-03), Vicente the B+ tree (INC-04), Kenza the hash table (INC-02), and Neil the sorted and unsorted lists (INC-01; the unsorted list matched theory, so it has no incident). Each person wrote the incident report and report summary for their index.
+
+**Part E:** Every member ran the CORE suite on the original code and again after all fixes. [name] wrote the hardware comparison.
+
+**Report:** Each member wrote the sections for their respective work. We all drafted and edited the final report.
 
 ### AI assistance
 
