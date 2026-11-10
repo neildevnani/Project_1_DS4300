@@ -4,7 +4,24 @@ Submit as a PDF on Gradescope. Aim for 10–15 pages of content plus appendices.
 
 ## 1. Executive summary (≤ 1 page)
 
-[To write after all fixes are in: one recommendation per feature (F1 track page, F2 search-as-you-type, F3 workout mode, F4 catalog import), each with the single strongest piece of evidence. Name the incidents you found.]
+We had benchmarked five python indexes and two C reference indicies on the 114,000 track Spotify catalog. We found 4 performance indicents in the intern's code, fixed all of them and re-ran the 7 experiments on the fixed code (commit 94403ce), on neil-mac. Our reccomandtions are the following:
+
+**F1, track page (point lookup by track_id): hash table.** It needed about 1.3 comparisons per lookup at every catalog size, so its cost stays constant as the catalog grows, and it took 0.67 µs per hit at n = 114,000, the fastest of our five indexes (E2). Runner-up: AVL tree (1.38 µs).
+
+**F2, search-as-you-type (prefix on track_name): B+ tree.** A five charecter prefix took 5.9µs vs 9400µs for the hash table, which has to scan all buckets. It was the fastest of our five indexes at all prefix lengths (E4) Runner up: sorted list
+
+**F3, workout mode (range on tempo): B+ tree.** The narrowest range took just 2.5 µs, against about 2,700 µs for the hash table's full scan, and the B+ tree was about twice as fast as the AVL tree at every range size (E3). The sorted list queries slightly faster but took over 4× longer to build (989 vs. 223 ms), so it is the runner-up, and the better choice only if the tempo index is rarely rebuilt.
+
+**F4, catalog import (build): B+ tree.** It is the fastest ordered index to build: 223 ms at n = 114,000, against 666 ms for the AVL tree and 989 ms for the sorted list (E1). Insert order barely affected it (166–223 ms in E5). The hash table builds faster (76.8 ms) but it cant serve range or prefix queries, so it is the runner-up.
+
+**Incidents found and fixed:**
+
+- **INC-01, sorted list:** search scanned the list instead of using binary search. Comparisons per hit fell from 46,119 to 16.5.
+- **INC-02, hash table:** the table grew by a fixed 1,024 buckets instead of doubling, which made building it O(n²). At n = 114,000, resizes fell from 117 to 14 and build time from 1,629 ms to 84.5 ms.
+- **INC-03, B+ tree:** range and prefix queries visited the whole tree instead of following the leaf chain. A 1% range query fell from 45,653 comparisons to 474.
+- **INC-04, AVL tree:** both rotations updated the new parent's height before the new child's, so stored heights were wrong and the tree did needless rotations and grew too tall. Rotations per insert at n = 114,000 fell from 12.95 to 0.55, and the E5 height of 26 (above the AVL limit of about 23.9) fell to 20.
+
+The counters (comparisons, nodes visited, rotations, splits, resizes) were identical on all four laptops for the same code. The fastest laptop was a median of 3.2× faster than the slowest, but the order of the indexes from fastest to slowest stayed the same, so none of our recommendations depends on the hardware. The C reference indexes were 2–3× faster than our Python versions but grew at the same rate as n increased, so the same choices would hold in a faster language.
 
 ## 2. How the indexes work (Part A)
 
@@ -256,6 +273,7 @@ Building the hash table got much slower as n grew, because _grow (hash_table.py 
 INC-03 is documenting a bug where our B+ tree's `_collect_range` recursed into every single child skipping the step where it checks if it could overlap the range of the query. Because of this, every range and prefix based query scanned the entire tree. 45,653 comparisons for a 1% range query instead of only 474 as it was supposed to do. The results were still correct, so the correctness only tests missed it, but E3 exposed the bug because cost stayed flat across all selectivites [incident_reports/INC-03_e3.png]. The fix descends once to the leaf where `lo` belongs, then it walks the `next` pointers until it passes `hi`. That restores the behavior of 0(log n + k) and cuts the range queries from 4.90 ms to 0.19ms (26x) and prefix queries from 10.4ms to 0.07ms. With this fix pushed, the B+ tree matches the sorted list and becomes a candidate for F2 and F3. 
 
 ### INC-04: AVL tree does too many rotations due to height update in wrong order
+
 AVL tree did too many rotations during building. Because both functions _rotate_right lines 62–63 and _rotate_left lines 80–81) recalculated the new parents height before the new childs. The rule it follows is that a nodes height is 1+ the largest childs height. Therefore unnecessary rotations were done. So error grows with n. In E1 tree does 12.95 rotations with 114,000 track ids when it should be at most 1. In E5 height reached 26 when the limit is around 23.9 (1.44·log₂n). search answers were correct as it didn't break so tests were unable to catch it, was just very inefficient. After fix rotation dropped to 0.55 and stayed flat as n was growing. It also built faster 859.9 ms into 434.5 ms  
 
 ![inc03_build.png](../analysis/inc03_build.png)
@@ -290,20 +308,18 @@ CORE does not record memory, so we used E1's memory_bytes from neil-mac on the f
 
 ## 7. Recommendations
 
-[Per feature: the recommended index, the runner-up, the trade-offs (build cost, memory, query types it cannot serve), and what would change your answer (much larger data, a different query mix, data on disk instead of in memory). Discuss what the reference indexes reveal.]
-
 ### F1: Track page (point lookup by track_id)
 
 First Recommendation is hash table, runnerup is AVL tree. Because it is a point look up by track_id (looking up exact IDs) hash table would be the fastest. It took 0.67 per hit and 0.49 per miss.
 
-The hash tables cost stayed relatively flat compared to other methods. Also it doesn't check the entire database it calcs where the ID is stored, jumping directly into a bucket. 
+The hash tables cost stayed relatively flat compared to other methods. Also it doesn't check the entire database it calcs where the track ID is stored, jumping directly into a bucket. 
 
 However, hash tables use a lot of memory and doesn't allow for range queries. So the answer would change if these catalogs were too large to fit in memory and was stored in a disk.
 
 
 ### F2: Search-as-you-type (prefix on track_name)
 
-First Recommendation is B+ tree , runnerup is sorted list. Because you are looking up every title that starts with a specific prefix (prefix query), acts similarly to a range where you don't have to start at the beginning as it is already partially sorted, each node also holds many keys so fewer nodes need to be visited. 
+First Recommendation is B+ tree , runnerup is sorted list. Because you are looking up every title that starts with a specific prefix (prefix query), acts similarly to a range where you don't have to start at the beginning as it is already sorted, each node also holds many keys so fewer nodes need to be visited. 
 
 Cost dropped as prefix got longer, as the shorter the prefix the more track name options there are, it also builds faster and is able to add new track names without needing to shift lists.
 
@@ -354,3 +370,4 @@ What can be measured next is a massive n, with more data it would be interesting
 
 [Which tools, for what, and what you verified yourselves.]
 claude helped with inc-04 (fix section ) - to get the code for diff [chloe]
+claude helped with the grammar and polishing of words and formatting for exec summary [vicente]
