@@ -6,7 +6,6 @@ The B+ tree's `range_search`, and `prefix_search`, twhich base.py builds on top 
 
 ## Detection
 
-
 The CORE suite (Neil's run, `e9c1863`) first showed it: B+ tree range queries examined 45,653 keys per query, roughly 100× more than theory predicts for a 1% range. The E3 experiment (`f6f773e`) confirmed it: B+ tree comparisons were exactly 9,130,600 per 200 queries at every selectivity from 0.0001 to 0.25, while the sorted list's cost grew with the size of the range. A range-query cost that doesn't depend on the range size means the query is reading everything. E6 showed the same 9,130,600 at every B+ tree order from 3 to 512. Before the fix, the B+ tree did exactly as many comparisons on range queries as the hash table, which has no key order at all.
 
 ## Expected vs. observed
@@ -49,17 +48,56 @@ The answers were still correct for two reasons. In each leaf, line 184 (`if lo <
 
 ## Fix
 
-Commit `c8ec36c`. `range_search` now:
-
-1. returns `[]` if `lo > hi`;
-2. calls `_find_leaf(lo)` to go down one path from the root to the leaf where `lo` belongs;
-3. uses `_bisect_left` to find the first key `>= lo` in that leaf;
-4. walks right through the keys, following `leaf.next` at the end of each leaf, adding each key's values to the result and stopping at the first key greater than `hi`.
-
-`_collect_range` was removed, since nothing else used it.
-
 ```diff
-<paste the output of: git diff c8ec36c~1 c8ec36c -- indexes/>
+diff --git a/indexes/bplus_tree.py b/indexes/bplus_tree.py
+index 7005649..31a71ba 100644
+--- a/indexes/bplus_tree.py
++++ b/indexes/bplus_tree.py
+@@ -172,22 +172,30 @@ class BPlusTreeIndex(Index):
+ 
+     def range_search(self, lo: Any, hi: Any) -> list[Any]:
+         result: list[Any] = []
+-        if lo <= hi:
+-            self._collect_range(self._root, lo, hi, result)
+-        return result
++        if lo > hi:
++            return result
+ 
+-    def _collect_range(self, node: _Node, lo: Any, hi: Any, out: list[Any]) -> None:
+-        """Gather values for keys in [lo, hi] from the subtree under ``node``, in key order."""
+-        self.stats.nodes_visited += 1
+-        if isinstance(node, _Leaf):
+-            for key, values in zip(node.keys, node.values):
+-                if lo <= key <= hi:
+-                    out.extend(values)
+-            self.stats.comparisons += len(node.keys)
+-            return
+-        for child in node.children:
+-            self._collect_range(child, lo, hi, out)
++        # Go down the tree once, to the leaf where lo belongs
++        leaf = self._find_leaf(lo)
++
++        # Find where lo starts inside that leaf
++        i = self._bisect_left(leaf.keys, lo)
+ 
++        # Walk right along the leaves until we pass hi
++        while leaf is not None:
++            while i < len(leaf.keys):
++                self.stats.comparisons += 1
++                if leaf.keys[i] > hi:
++                    return result
++                result.extend(leaf.values[i])
++                i += 1
++            leaf = leaf.next
++            i = 0
++            if leaf is not None:
++                self.stats.nodes_visited += 1
++
++        return result
++    
+     # ------------------------------------------------------------------ structure
+     def structure_info(self) -> dict[str, Any]:
+         height = 1
 ```
 
 ## Verification
