@@ -251,6 +251,12 @@ Building the hash table got much slower as n grew, because _grow (hash_table.py 
 
 [Key figure: analysis/inc02_hash_table_e1.png, build time vs. n and resizes vs. n, before and after the fix.]
 
+### INC-03: B+ tree range and prefix queries scan the whole tree
+
+INC-03 documents a bug where the B+ tree's `_collect_range` recursed into every child without checking whether it could overlap the query range. As a result, every range and prefix query scanned the whole tree: 45,653 comparisons for a 1% range query instead of about 474. Results were still correct, so the correctness-only tests missed it, but E3 exposed it because cost stayed flat across all selectivities. The fix descends once to the leaf where `lo` belongs, then walks the leaf `next` pointers until it passes `hi`. That restores O(log n + k) behavior and cuts range queries from 4.90 ms to 0.19 ms (about 26×) and prefix queries from 10.4 ms to 0.07 ms. With the fix, the B+ tree matches the sorted list on comparisons and becomes a real candidate for F2 and F3.
+
+
+
 ## 6. Hardware comparison (Part E)
 
 We compared the CORE runs from all four machines. Before-fix runs used commits 2c52c55, e9c1863 and e9db2d1; after-fix runs used 9aba440, 65bfead and 65c95ad, whose index code is identical. Vicente also ran CORE at c8ec36c, before the AVL fix was merged; we used his later run at 65bfead, which includes all four fixes. Analysis is in analysis/Hardware_comparisons.ipynb.
