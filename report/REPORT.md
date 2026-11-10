@@ -310,45 +310,45 @@ CORE does not record memory, so we used E1's memory_bytes from neil-mac on the f
 
 ### F1: Track page (point lookup by track_id)
 
-First Recommendation is hash table, runnerup is AVL tree. Because it is a point look up by track_id (looking up exact IDs) hash table would be the fastest. It took 0.67 per hit and 0.49 per miss.
+First Recommendation is hash table, runnerup is AVL tree. AVL tree: 1.38 µs per hit. Memory: hash table 22.3 MB vs. 13.1 MB for the AVL tree and 9.2 MB for the B+ tree. Because it is a point look up by track_id (looking up exact IDs) hash table would be the fastest. It took 0.67 per hit and 0.49 per miss.
 
 The hash tables cost stayed relatively flat compared to other methods. Also it doesn't check the entire database it calcs where the track ID is stored, jumping directly into a bucket. 
 
-However, hash tables use a lot of memory and doesn't allow for range queries. So the answer would change if these catalogs were too large to fit in memory and was stored in a disk.
+However, hash tables use a lot of memory and doesn't allow for range queries. So the answer to this question would change if these catalogs were too large to fit in memory and was stored in a disk.
 
 
 ### F2: Search-as-you-type (prefix on track_name)
 
-First Recommendation is B+ tree , runnerup is sorted list. Because you are looking up every title that starts with a specific prefix (prefix query), acts similarly to a range where you don't have to start at the beginning as it is already sorted, each node also holds many keys so fewer nodes need to be visited. 
+First Recommendation is B+ tree , runnerup is sorted list.  B+ tree was fastest at every prefix length: 623 µs and sorted list was 6.2 µs. Because you are looking up every title that starts with a specific prefix (prefix query), acts similarly to a range where you don't have to start at the beginning as it is already sorted, each node also holds many keys so fewer nodes need to be visited. 
 
 Cost dropped as prefix got longer, as the shorter the prefix the more track name options there are, it also builds faster and is able to add new track names without needing to shift lists.
 
-However, if the node can only hold a small amount of keys, then all processes will slow down. If it didnt get updates and no new information got added or removed, sorted list would be good to use. 
+However, if the node can only hold a small amount of keys and, then all processes will slow down as small B+ tree orders like 3–8 were slower. What would change is that if it didn't get updates and no new information got added or removed, sorted list would be good to use. 
 
 ### F3: Workout mode (range on tempo)
 
-First Recommendation is B+ tree , runnerup is sorted list, because a range query needs to be performed this indexing allows the system to find the where the beginning of the range is located and stops reading when it reaches the end (B+ trees are linked this is done very easily)
+First Recommendation is B+ tree , runnerup is sorted list. sorted list 53.2 µs, B+ tree 64.8, AVL tree 129.3, hash table 2,950, unsorted list 2,618. Because a range query needs to be performed this indexing allows the system to find the where the beginning of the range is located and stops reading when it reaches the end (B+ trees are linked this is done very easily)
 
-Cost grows with size of the range, and sorted lists are slightly faster when querying, but the built time was much slower and updating would be difficult. If the tempo index were built once and never updated,                                                                                       
+Cost grows with size of the range, and sorted lists are slightly faster when querying, but the built time was much slower and updating would be difficult. The answer would change if the tempo index were built once and never updated,                                                                                       
 the sorted list would be the better choice.
 
 ### F4: Catalog import (insert/build)
 
-First Recommendation is B+ tree , runnerup is hash table, its the fastest index to build that will help keep the keys ordered white built time not being affected that much by inserts.
+First Recommendation is B+ tree , runnerup is hash table, its the fastest index to build that will help keep the keys ordered while built time not being affected that much by inserts. E1 build at n = 114,000: hash 76.8 ms, B+ tree 223, AVL 666, sorted list 989, unsorted 9.9
 
-A drawback is that Building is faster when using the hash table however it can only perform lookups, whereas B+ allows for querying. If the new tracks were to arrive presorted and the index was rebuilt a sorted list could be used however the larger the worse it would perform. 
+A drawback is that Building is faster when using the hash table however it can only perform lookups, whereas B+ allows for querying. If the new tracks were to arrive presorted and the index was rebuilt the answer would change into a sorted list could be used however the larger the worse it would perform. 
 
 ### What the reference indexes reveal
 
-they run the same algorithm in c, therefor they don't show much of runtime/performance cost of executing Python code, rather than the algorithm itself
+They run the same algorithm in c, so comparing them with our Python versions shows how much of the cost is Python, rather than the algorithm itself
 the python dict is around 2x faster than hashtable and 4x faster to build
-bisect is 3x faster than sorted lists. But bisects build slowly, inserts take a long time.
+dict 0.29 vs. 0.67 µs per hit, build 17.5 vs. 76.8 ms per hit and bisect 0.72 vs. 1.88 µs per hit
 
-Reveals that c makes every index a constant factor faster, but doesn't change the efficiency of an algorithm as the input size grows. So our recommendations still would be used in a different language
+Bisect is 3x faster than sorted lists. But bisects build slowly (862 vs. 989 ms), this is because inserts take a long time due to the shifts in the list. Reveals that c makes every index a constant factor faster, but doesn't change the efficiency of an algorithm as the input size grows. So our recommendations still would be used in a different language
 
 ## 8. Limitations
 
-What can be measured next is a massive n, with more data it would be interesting to see the growth rates hold. Also because there are other apps open on computers or plugged vs not plugged in, it all skews the data slightly. and it should be kept more consistent
+What can be measured next is a massive n, with more data it would be interesting to see the growth rates hold. Also because there are other apps open on computers or plugged vs not plugged in, it all skews the data slightly. and it should be kept more consistent. Additionally everything is in memory so claims that the B+ tree would win on disk is not measured. 
 
 ## Appendix
 
