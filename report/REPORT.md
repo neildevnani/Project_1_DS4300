@@ -208,27 +208,31 @@ Building the hash table got much slower as n grew, because _grow (hash_table.py 
 
 ## 6. Hardware comparison (Part E)
 
-[Answers to the five Part E questions, using the CORE rows from every member.]
+We compared the CORE runs from all four machines. Before-fix runs used commits 2c52c55, e9c1863 and e9db2d1; after-fix runs used 9aba440, 65bfead and 65c95ad, whose index code is identical. Vicente also ran CORE at c8ec36c, before the AVL fix was merged; we used his later run at 65bfead, which includes all four fixes. Analysis is in analysis/Hardware_comparisons.ipynb.
 
 ### Q1: Are the counters identical across machines for the same code_version?
 
-[fill in]
+Yes. Within each phase, every machine and every rep produced exactly the same comparisons, nodes visited, rotations, splits and resizes (0 configurations differ; Q1 cell). Counters changed between phases only where we fixed code: sorted list point lookups dropped from 45,614 to 16.5 comparisons per hit, B+ tree range queries from 45,653 to 474, and the AVL tree and hash table builds and lookups also dropped. This confirms the counters measure the algorithm, not the hardware.
 
 ### Q2: How much faster is the fastest machine than the slowest, and is the ratio the same across indexes and operations?
 
-[fill in]
+chloe-mac (M5) was the fastest and vicente-mba (M1) the slowest in all 42 configurations. The median ratio was 3.2× (range 1.7× to 19.7×; Q2 cell). The ratio is not constant: the C reference indexes varied less (median 2.5×) than the Python indexes (median 3.3×). The largest ratios (AVL point hits 19.7×, B+ tree build 8.4×) come from Vicente's after-fix run, which was much noisier than the others (Q4). Among the other three machines, the ratio was only 1.2× to 2.2× (median 1.46×).
+
+![Median time per point hit by machine](../analysis/hardware_point_hits.png)
+
+*Figure X: median time per point hit (ns, log scale) at n = 114,000, by index and machine, CORE after fixes. The bars keep the same order on every machine and differ mainly by a constant factor; the vicente-mba AVL bar is a noise spike. Made in analysis/Hardware_comparisons.ipynb, figure cell.*
 
 ### Q3: Does the ranking of the indexes change from machine to machine?
 
-[fill in]
+Mostly no. In 29 of 42 configurations all four machines ranked the indexes identically (Q3 cell), including the fastest and slowest for every operation: ref_dict fastest for point lookups, ref_bisect fastest for range and prefix, and unsorted_list fastest to build but slowest for point lookups. The 13 disagreements are swaps between neighbouring indexes with similar times (for example hash_table vs ref_bisect on point hits), plus Vicente's noisy AVL rows. None would change a recommendation.
 
 ### Q4: How variable are repeated runs on each machine, and is any machine noisier?
 
-[fill in]
+We used the coefficient of variation (standard deviation / mean) across the 5 reps (Q4 cell). After the fixes, kenza-mba, the only machine plugged in, was the steadiest (median CV 0.023), followed by chloe-mac (0.033) and neil-mac (0.059). vicente-mba was by far the noisiest (median 0.147, max 1.56), even though his before-fix run was steady (0.035), which points to background load or battery throttling during that run rather than his hardware. Two environments also changed slightly between phases (chloe-mac's Python 3.13.16 → 3.13.18, neil-mac's Docker kernel 7.0.12 → 7.0.14); these can affect timings but not counters.
 
 ### Q5: How much RAM does each index need, and could RAM differences between machines matter?
 
-[fill in]
+CORE does not record memory, so we used E1's memory_bytes from neil-mac on the final commit (5b5a8da; Q5 cell). At n = 114,000, the indexes need between 7.4 MB (unsorted list) and 22.3 MB (hash table, about 195 bytes per key because of its empty buckets). Even the hash table would not fill the smallest Docker limit on the team (4 GB) until about 21 million tracks, roughly 180× the current catalog. So the RAM differences between our machines don't matter at this size. Memory depends on the code and Python version rather than the hardware, so one machine's measurement is representative.
 
 ## 7. Recommendations
 
@@ -286,9 +290,9 @@ What can be measured next is a massive n, with more data it would be interesting
 
 **Part C:** Chloe wrote E1–E4 and Vicente wrote E5–E7. Neil ran the final E1–E7 measurements on neil-mac.
 
-**Part D:** Chloe investigated the AVL tree (INC-03), Vicente the B+ tree (INC-04), Kenza the hash table (INC-02), and Neil the sorted and unsorted lists (INC-01; the unsorted list matched theory, so it has no incident). Each person wrote the incident report and report summary for their index.
+**Part D:** Neil investigated the sorted and unsorted lists (INC-01; the unsorted list matched theory, so it has no incident), Kenza the hash table (INC-02), Vicente the B+ tree (INC-03), and Chloe the AVL tree (INC-04). Each person wrote the incident report and report summary for their index.
 
-**Part E:** Every member ran the CORE suite on the original code and again after all fixes. [name] wrote the hardware comparison.
+**Part E:** Every member ran the CORE suite on the original code and again after all fixes. Neil wrote the hardware comparison.
 
 **Report:** Each member wrote the sections for their respective work. We all drafted and edited the final report.
 
