@@ -256,7 +256,7 @@ Building the hash table got much slower as n grew, because _grow (hash_table.py 
 INC-03 is documenting a bug where our B+ tree's `_collect_range` recursed into every single child skipping the step where it checks if it could overlap the range of the query. Because of this, every range and prefix based query scanned the entire tree. 45,653 comparisons for a 1% range query instead of only 474 as it was supposed to do. The results were still correct, so the correctness only tests missed it, but E3 exposed the bug because cost stayed flat across all selectivites [incident_reports/INC-03_e3.png]. The fix descends once to the leaf where `lo` belongs, then it walks the `next` pointers until it passes `hi`. That restores the behavior of 0(log n + k) and cuts the range queries from 4.90 ms to 0.19ms (26x) and prefix queries from 10.4ms to 0.07ms. With this fix pushed, the B+ tree matches the sorted list and becomes a candidate for F2 and F3. 
 
 ### INC-04: AVL tree does too many rotations due to height update in wrong order
-AVL tree did too many rotations during building. Because both functions rotate_right lines 62–63 and _rotate_left lines 80–81) recalculated the new parents height before the new childs. The rule it follow is that a nodes height is 1+ the largest childs height. Therefor unnecessary rotations were done. SO error grows with n. In E1 tree does 12.95 rotations with 114,000 track ids when it should be at most 1. In E5 height reached 26 when the limit is around 23.9 (1.44·log₂n). search answers were correct as it didn't break so tests were unable to catch it, was just very inefficient. After fix rotation dropped to 0.55 and stayed flat as n was growing. It also built it faster. 
+AVL tree did too many rotations during building. Because both functions _rotate_right lines 62–63 and _rotate_left lines 80–81) recalculated the new parents height before the new childs. The rule it follows is that a nodes height is 1+ the largest childs height. Therefore unnecessary rotations were done. So error grows with n. In E1 tree does 12.95 rotations with 114,000 track ids when it should be at most 1. In E5 height reached 26 when the limit is around 23.9 (1.44·log₂n). search answers were correct as it didn't break so tests were unable to catch it, was just very inefficient. After fix rotation dropped to 0.55 and stayed flat as n was growing. It also built faster 859.9 ms into 434.5 ms  
 
 ![inc03_build.png](../analysis/inc03_build.png)
 
@@ -294,9 +294,9 @@ CORE does not record memory, so we used E1's memory_bytes from neil-mac on the f
 
 ### F1: Track page (point lookup by track_id)
 
-First Recommendation is hash table, runnerup is AVL tree. Because it is a point look up by track_id (looking up exact IDs) hash table would be the fastest. It took 0.57 per hit and 0.41 per miss.
+First Recommendation is hash table, runnerup is AVL tree. Because it is a point look up by track_id (looking up exact IDs) hash table would be the fastest. It took 0.67 per hit and 0.49 per miss.
 
-The hash tables cost stayed relatively flat compared to other methods. Also it doesn't check the entire database it calcs where the student ID is stored, jumping directly into a bucket. 
+The hash tables cost stayed relatively flat compared to other methods. Also it doesn't check the entire database it calcs where the ID is stored, jumping directly into a bucket. 
 
 However, hash tables use a lot of memory and doesn't allow for range queries. So the answer would change if these catalogs were too large to fit in memory and was stored in a disk.
 

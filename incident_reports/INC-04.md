@@ -1,7 +1,5 @@
 # INC-04: AVL tree does too many rotations due to height update in wrong order
 
-
-
 ## Summary
 
 The AVL tree did too many rotation - about 13 per inserts instead of at most 1 when building on all track IDs and 
@@ -29,7 +27,7 @@ Random height was 26 and nearly sorted height was 25 at 100000 both above 23.9
 ## Evidence
 
 ![inc03_build.png](../analysis/inc03_build.png)
-Made build time slower as you can see the orange line (after) is lower. Rotation orange line(after) is also flat
+Made build time slower for the before as you can see the orange line (after) is lower. Rotation orange line(after) is also flat
 ![inc03_height.png](../analysis/inc03_height.png)
 After lines are lower and are short paths the trees are no longer as tall
 ![inc03_rotations.png](../analysis/inc03_rotations.png)
@@ -39,9 +37,6 @@ Because the counters are deterministic, the extra rotations are not caused from 
 the code versions were before:f6f773e and after = 549f076
 
 ## Root cause
-
-File, function, and line numbers. Explain in plain English what the code does, what it should do,
-and why the difference costs time but still gives correct answers.
 
 The file comes from indexes/avl_tree.p and the incorrect functions were the _rotate_right lines 62–63 and _rotate_left 
 lines 80–81. A nodes height is supposed to be 1+ the largest height of all its children, then after the rotation the old
@@ -87,12 +82,10 @@ Diff (`git diff f6f773e..050f368 -- indexes/avl_tree.py`):
 
 ## Verification
 
-Before/after comparison on the same workload and seeds (same experiment, two `code_version`s).
-Confirm `make test` still passes.
 E1 rotation = 12.95 into 0.55
 E5 = random 26 14.7 into 0.7, sorted & reversed 11.4 into 1.00, nearly_sorted 10.4 into 1.20
 Height = random 26 into 20, sorted 21 into 17
-E1 build = 1262 into 442ms
+E1 build = 859.9ms (e9c1863) into 434.5ms (9aba440)
 Make test still passes.
 
 ## Impact on recommendations
