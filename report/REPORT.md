@@ -19,7 +19,7 @@ We had benchmarked five python indexes and two C reference indicies on the 114,0
 - **INC-01, sorted list:** search scanned the list instead of using binary search. Comparisons per hit fell from 46,119 to 16.5.
 - **INC-02, hash table:** the table grew by a fixed 1,024 buckets instead of doubling, which made building it O(n²). At n = 114,000, resizes fell from 117 to 14 and build time from 1,629 ms to 84.5 ms.
 - **INC-03, B+ tree:** range and prefix queries visited the whole tree instead of following the leaf chain. A 1% range query fell from 45,653 comparisons to 474.
-- **INC-04, AVL tree:** [what was wrong, the key number before → after].
+- **INC-04, AVL tree:** both rotations updated the new parent's height before the new child's, so stored heights were wrong and the tree did needless rotations and grew too tall. Rotations per insert at n = 114,000 fell from 12.95 to 0.55, and the E5 height of 26 (above the AVL limit of about 23.9) fell to 20.
 
 The counters (comparisons, nodes visited, rotations, splits, resizes) were identical on all four laptops for the same code. The fastest laptop was a median of 3.2× faster than the slowest, but the order of the indexes from fastest to slowest stayed the same, so none of our recommendations depends on the hardware. The C reference indexes were 2–3× faster than our Python versions but grew at the same rate as n increased, so the same choices would hold in a faster language.
 
@@ -272,6 +272,12 @@ Building the hash table got much slower as n grew, because _grow (hash_table.py 
 
 INC-03 is documenting a bug where our B+ tree's `_collect_range` recursed into every single child skipping the step where it checks if it could overlap the range of the query. Because of this, every range and prefix based query scanned the entire tree. 45,653 comparisons for a 1% range query instead of only 474 as it was supposed to do. The results were still correct, so the correctness only tests missed it, but E3 exposed the bug because cost stayed flat across all selectivites [incident_reports/INC-03_e3.png]. The fix descends once to the leaf where `lo` belongs, then it walks the `next` pointers until it passes `hi`. That restores the behavior of 0(log n + k) and cuts the range queries from 4.90 ms to 0.19ms (26x) and prefix queries from 10.4ms to 0.07ms. With this fix pushed, the B+ tree matches the sorted list and becomes a candidate for F2 and F3. 
 
+### INC-04: AVL tree does too many rotations due to height update in wrong order
+
+AVL tree did too many rotations during building. Because both functions rotate_right lines 62–63 and _rotate_left lines 80–81) recalculated the new parents height before the new childs. The rule it follow is that a nodes height is 1+ the largest childs height. Therefor unnecessary rotations were done. SO error grows with n. In E1 tree does 12.95 rotations with 114,000 track ids when it should be at most 1. In E5 height reached 26 when the limit is around 23.9 (1.44·log₂n). search answers were correct as it didn't break so tests were unable to catch it, was just very inefficient. After fix rotation dropped to 0.55 and stayed flat as n was growing. It also built it faster. 
+
+![inc03_build.png](../analysis/inc03_build.png)
+
 ## 6. Hardware comparison (Part E)
 
 We compared the CORE runs from all four machines. Before-fix runs used commits 2c52c55, e9c1863 and e9db2d1; after-fix runs used 9aba440, 65bfead and 65c95ad, whose index code is identical. Vicente also ran CORE at c8ec36c, before the AVL fix was merged; we used his later run at 65bfead, which includes all four fixes. Analysis is in analysis/Hardware_comparisons.ipynb.
@@ -366,4 +372,4 @@ What can be measured next is a massive n, with more data it would be interesting
 
 [Which tools, for what, and what you verified yourselves.]
 claude helped with inc-04 (fix section ) - to get the code for diff [chloe]
-claude helped with the grammar and polishing of words and formatting for exec summary and 
+claude helped with the grammar and polishing of words and formatting for exec summary [vicente]
