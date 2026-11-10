@@ -274,9 +274,10 @@ INC-03 is documenting a bug where our B+ tree's `_collect_range` recursed into e
 
 ### INC-04: AVL tree does too many rotations due to height update in wrong order
 
-AVL tree did too many rotations during building. Because both functions _rotate_right lines 62–63 and _rotate_left lines 80–81) recalculated the new parents height before the new childs. The rule it follows is that a nodes height is 1+ the largest childs height. Therefore unnecessary rotations were done. So error grows with n. In E1 tree does 12.95 rotations with 114,000 track ids when it should be at most 1. In E5 height reached 26 when the limit is around 23.9 (1.44·log₂n). search answers were correct as it didn't break so tests were unable to catch it, was just very inefficient. After fix rotation dropped to 0.55 and stayed flat as n was growing. It also built faster 859.9 ms into 434.5 ms  
+AVL tree did too many rotations during building. Because both functions _rotate_right lines 62–63 and _rotate_left lines 80–81 recalculated the new parents height before the new childs. The rule it follows is that a nodes height is 1+ the largest childs height. Therefore unnecessary rotations were done. So error grows with n. In E1 tree does 12.95 rotations per insert with 114,000 track ids when it should be at most 1. In E5 height reached 26 when the limit is around 23.9 (1.44·log₂n). search answers were correct as it didn't break so tests were unable to catch it, was just very inefficient. After fix (child gets updated first (commit 549f076) + make test pass) rotation dropped to 0.55 and stayed flat as n was growing. It also built faster 859.9 ms into 434.5 ms  
 
 ![inc03_build.png](../analysis/inc03_build.png)
+fig: Comparison between the before and after. Made build time slower for the before as you can see the orange line (after) is lower. Rotation orange line(after) is also flat
 
 ## 6. Hardware comparison (Part E)
 
