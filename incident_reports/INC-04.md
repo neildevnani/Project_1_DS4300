@@ -5,7 +5,7 @@
 The AVL tree did too many rotation - about 13 per inserts instead of at most 1 when building on all track IDs and 
 created taller trees than AVL should be. This is because both of the left and right rotations re calculated the parents 
 height before calculating the childs height, but parents height is calculated from the child height. Swapping
-"_update_height(x)" and "_update_height(y)" fixed it. Build went from around 1,262 ms to 442 ms
+"_update_height(x)" and "_update_height(y)" fixed it. Build went from around 859.9 ms to 434.5 ms
 
 ## Detection
 
@@ -38,12 +38,11 @@ the code versions were before:f6f773e and after = 549f076
 
 ## Root cause
 
-The file comes from indexes/avl_tree.p and the incorrect functions were the _rotate_right lines 62–63 and _rotate_left 
+The file comes from indexes/avl_tree.py and the incorrect functions were the _rotate_right lines 62–63 and _rotate_left 
 lines 80–81. A nodes height is supposed to be 1+ the largest height of all its children, then after the rotation the old
 parent moves down and becomes a child. In the code it would update the new parent first and therefor using the childs old height
 this made the height too large. Because of the wrong height rotations were done that were no needed resulting in incorrect
-heights that grew as n grows. The rotations were still correct but were just doing extra work to correct which made the tree
-taller.
+heights that grew as n grows. The rotations were still correct (because a rotation never breaks the order) but were just doing extra work to correct which made the tree taller.
 
 ## Fix
 
@@ -83,9 +82,9 @@ Diff (`git diff f6f773e..050f368 -- indexes/avl_tree.py`):
 ## Verification
 
 E1 rotation = 12.95 into 0.55
-E5 = random 26 14.7 into 0.7, sorted & reversed 11.4 into 1.00, nearly_sorted 10.4 into 1.20
+E5 = random 14.7 into 0.7, sorted & reversed 11.4 into 1.00, nearly_sorted 10.4 into 1.20
 Height = random 26 into 20, sorted 21 into 17
-E1 build = 859.9ms (e9c1863) into 434.5ms (9aba440)
+E1 build = 859.9 ms (e9c1863) into 434.5 ms (9aba440)
 Make test still passes.
 
 ## Impact on recommendations
@@ -95,5 +94,6 @@ still not better than B+. The Lookup is a little better went from 16.8 to 15.7
 
 ## Why the tests didn't catch it
 
-The test that would catch it is checking rotation per insert is lower or equal to 1 after inserting a key. As well as
-making sure the structure_info() height is smaller or equal to 1.44·log2(n)
+The test that would catch it is checking rotation per insert is lower or equal to 1 on average after inserting a key. As well as
+making sure the structure_info() height is smaller or equal to 1.44·log2(n). The reason it wasn't caught was because it still obeyed the rules,
+the test only checked the index returns the correct answers not how it got them. But due to how many rotations it was doing the tree was just doing more work than it needed to
