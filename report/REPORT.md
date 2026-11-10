@@ -198,8 +198,7 @@ Point lookups on the sorted list got slower as n grew, because search (sorted_li
 
 ![INC-01: comparisons per hit before and after the fix](../incident_reports/inc01_before_after.png)
 
-*Figure X: comparisons per point hit for `sorted_list` in E2, before (f6f773e) and after (09fdd)
-
+  *Figure X: comparisons per point hit for `sorted_list` in E2, before (f6f773e) and after (09fddb5) the fix, on log-log axes, against the log₂ n theory line. After the fix the points sit on the theory line. Made in analysis/sorted_analysis.ipynb, E2 before/after cell.*
 
 ### INC-02: Hash table build cost grows with n² instead of n
 
