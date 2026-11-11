@@ -10,7 +10,7 @@ We benchmarked five Python indexes and two C reference indexes on the 114,000-tr
 
 **F3, workout mode (range on tempo): B+ tree.** The narrowest range took just 2.5 µs, against about 2,700 µs for the hash table's full scan, and the B+ tree was about twice as fast as the AVL tree at every range size (E3). The sorted list queries slightly faster but took over 4× longer to build (989 vs. 223 ms), so it is the runner-up, and the better choice only if the tempo index is rarely rebuilt.
 
-**F4, catalog import (build): B+ tree.** It is the fastest ordered index to build: 223 ms at n = 114,000, against 666 ms for the AVL tree and 989 ms for the sorted list (E1). Insert order barely affected it (166–223 ms in E5). The hash table builds faster (76.8 ms) but it can't serve range or prefix queries, so it is the runner-up.
+**F4, catalog import (build): B+ tree.** It is the fastest ordered index to build: 223 ms at n = 114,000, against 666 ms for the AVL tree and 989 ms for the sorted list (E1). Insert order affected it much less than the sorted list (166–223 ms vs. 131–2,144 ms in E5). The hash table builds faster (76.8 ms) but it can't serve range or prefix queries, so it is the runner-up.
 
 **Incidents found and fixed:**
 
@@ -53,7 +53,7 @@ Lines that do the work: line 28 is the list comprehension that loops over every 
 
 A sorted list should be able to find a key with binary search, which cuts the search space in half each step, so the expected cost is O(log n). The file already has a binary search, `_bisect_left` (lines 27–42), and `insert` (line 45) and `range_search` (line 71) both use it.
 
-However, `search` itself (lines 53–65) does not use it. Instead it walks the list from the start (the `for` loop on line 57), checking each key until it finds a match (line 59) or passes where the key would be (line 62). Because the keys are sorted it can stop early, but a hit still looks at about half the list on average (and our misses looked at all of it, because every miss key sorted after every real ID), so the interns' version costs O(n), not O(log n). This is the bug in INC-01. Lines 60 and 64 add the number of keys checked to the comparisons counter.
+However, `search` itself (lines 53–65) does not use it. Instead it walks the list from the start (the `for` loop on line 57), checking each key until it finds a match (line 59) or passes where the key would be (line 62). Because the keys are sorted it can stop early, but a hit still looks at about half the list on average (and our misses looked at all of it: every real track ID starts with a digit and our miss keys were all letters, so every miss sorted after every real ID), so the interns' version costs O(n), not O(log n). This is the bug in INC-01. Lines 60 and 64 add the number of keys checked to the comparisons counter.
 
 #### Hash table (`indexes/hash_table.py`)
 
@@ -170,7 +170,7 @@ We used four laptops, one per team member. All four are Apple Silicon MacBooks r
 | Machine | Member | Computer | CPU | Cores | RAM | macOS | Docker CPUs / memory | Power |
 |---|---|---|---|---|---|---|---|---|
 | kenza-mba | Kenza | MacBook Air 2022 | Apple M2 | 8 | 16 GB | 26.6.2 | 8 / 8 GB | plugged in |
-| neil-mac | Neil | MacBook Neo | Apple A18 Pro | 6 | 8 GB | not recorded | 6 / 4 GB | battery |
+| neil-mac | Neil | MacBook Neo | Apple A18 Pro | 6 | 8 GB | Tahoe 26.6.2 | 6 / 4 GB | battery |
 | chloe-mac | Chloe | MacBook Air | Apple M5 | 10 | 24 GB | Tahoe 26.7 | 10 / 8 GB | battery |
 | vicente-mba | Vicente | MacBook Air 2020 | Apple M1 | 8 | 8 GB | 26.4 | 8 / 4 GB | battery |
 
@@ -210,7 +210,7 @@ The hash table and ref_dict timings still rose slightly with n (slopes 0.19 and 
 
 The ordered indexes match the expected O(log n + k). At the smallest selectivity (0.0001), ref_bisect took 1.0 µs, the sorted list 2.1 µs, the B+ tree 2.5 µs and the AVL tree 4.4 µs, using only 19–22 comparisons, roughly log n plus a few matches. Their cost then grew in proportion to the range: at selectivity 0.25 the sorted list took 1,215 µs and 11,430 comparisons. The B+ tree consistently took about half the time of the AVL tree (1,625 vs. 3,536 µs at 0.25), because it walks the leaf chain instead of visiting tree nodes one at a time. The INC-03 fix shows up here too: B+ tree range comparisons were 474 at selectivity 0.01, compared with 45,653 before.
 
-The unordered indexes stayed near the cost of a full scan: the unsorted list at 2,580–3,050 µs, the hash table at 2,720–3,810 µs, and ref_dict at 1,210–2,050 µs. They still rose 17–70% from the narrowest to the widest range, probably because building a longer result list takes longer. ref_bisect was the fastest index at every selectivity, about 2–3× faster than the sorted list with the same growth. The gap between ordered and unordered indexes narrows as ranges get larger, and wide ranges produce a crossover: at selectivity 0.25 the AVL tree (3,536 µs) was slower than the unsorted list's full scan (3,051 µs) and ref_dict (2,050 µs), and only a little faster than the hash table (3,809 µs). So for very wide ranges the AVL tree loses its advantage completely, while the B+ tree and sorted list were still about 2× faster than the full scans.
+The unordered indexes stayed near the cost of a full scan: the unsorted list at 2,580–3,050 µs, the hash table at 2,720–3,810 µs, and ref_dict at 1,210–2,050 µs. They still rose 17–65% from the narrowest to the widest range, probably because building a longer result list takes longer. ref_bisect was the fastest index at every selectivity, about 2–3× faster than the sorted list with the same growth. The gap between ordered and unordered indexes narrows as ranges get larger, and wide ranges produce a crossover: at selectivity 0.25 the AVL tree (3,536 µs) was slower than the unsorted list's full scan (3,051 µs) and ref_dict (2,050 µs), and only a little faster than the hash table (3,809 µs). So for very wide ranges the AVL tree loses its advantage completely, while the B+ tree and sorted list were still faster than every full scan (the B+ tree by 1.3× over ref_dict and 1.9× over the unsorted list).
 
 ### E4: Prefix cost vs. prefix length
 
@@ -218,7 +218,7 @@ The unordered indexes stayed near the cost of a full scan: the unsorted list at 
 
 *Figure 4: time per prefix query (µs, log scale) vs. prefix length on track_name, n = 114,000. Ordered indexes get about 100× faster as the prefix lengthens and fewer titles match; unordered indexes stay flat. Error bars show the IQR of the 5 reps. Made in analysis/results.ipynb, E4 cell.*
 
-Prefix queries behave like range queries, because `base.py` turns each prefix into a range. For the ordered indexes, cost depends on how many titles match. A 1-character prefix matches thousands of titles: ref_bisect took 122 µs, the B+ tree 623 µs, the sorted list 677 µs and the AVL tree 1,278 µs. A 5-character prefix matches only a few, and the same indexes took 2.7, 5.9, 6.2 and 10.6 µs. The unordered indexes cannot narrow the search and stayed flat: ref_dict at about 2,600–2,850 µs, the unsorted list at 3,860–4,360 µs, and the hash table at 9,400–12,100 µs, the slowest of all because it scans every bucket. Even for 1-character prefixes, every ordered index beat every unordered one.
+Prefix queries behave like range queries, because `base.py` turns each prefix into a range. For the ordered indexes, cost depends on how many titles match. A 1-character prefix matches thousands of titles: ref_bisect took 122 µs, the B+ tree 623 µs, the sorted list 677 µs and the AVL tree 1,278 µs. A 5-character prefix matches only about 20 titles on average, and the same indexes took 2.7, 5.9, 6.2 and 10.6 µs. The unordered indexes cannot narrow the search and stayed flat: ref_dict at about 2,600–2,850 µs, the unsorted list at 3,860–4,360 µs, and the hash table at 9,400–12,100 µs, the slowest of all because it scans every bucket. Even for 1-character prefixes, every ordered index beat every unordered one.
 
 ### E5: Insert order
 
@@ -228,7 +228,7 @@ Prefix queries behave like range queries, because `base.py` turns each prefix in
 
 Insert order mattered most for the two list-based ordered indexes. The sorted list took 131 ms in sorted order, 258 ms nearly sorted, 1,236 ms random and 2,144 ms reversed, a 16× spread; ref_bisect ranged from 27 to 2,055 ms. In sorted order every new key goes at the end, so nothing shifts. In reversed order every key goes at the front and shifts the whole list, which is the O(n²) worst case.
 
-The trees were much less sensitive to order. AVL build times stayed within 590–679 ms and B+ tree times within 166–223 ms. The B+ tree's 1.34× spread was not zero, though: random order was slowest even though it needed the fewest splits (4,829, vs. 6,635 in sorted order), so the counters don't explain the extra time. The hash table was also 1.7–1.9× slower in random order (190 vs. 102–112 ms; about 1.2× on chloe-mac). The AVL tree did the most rotations on nearly sorted input (120,055) and the fewest on random input (70,144), but its height stayed between 17 and 20 in every case, close to log₂(100,000) ≈ 17. The B+ tree had a height of 4 for every order and split 4,829–6,661 nodes. The unsorted list (8–9 ms) and ref_dict (14–17 ms) did not care about order at all. Point lookups after building changed by up to about 1.5× between orders, but the sorted list, whose final structure is identical for every order, varied by the same amount (1.50–2.21 µs), so we treat these differences as noise.
+The trees were much less sensitive to order. AVL build times stayed within 590–679 ms and B+ tree times within 166–223 ms. The B+ tree's 1.34× spread was not zero, though: random order was slowest even though it needed the fewest splits (4,829, vs. 6,635 in sorted order), so the counters don't explain the extra time. The hash table was also 1.7–1.9× slower in random order (190 vs. 102–112 ms; 1.1–1.2× on chloe-mac). The AVL tree did the most rotations on nearly sorted input (120,055) and the fewest on random input (70,144), but its height stayed between 17 and 20 in every case, close to log₂(100,000) ≈ 17. The B+ tree had a height of 4 for every order and split 4,829–6,661 nodes. The unsorted list (8–9 ms) and ref_dict (14–17 ms) did not care about order at all. Point lookups after building changed by up to about 1.5× between orders, but the sorted list, whose final structure is identical for every order, varied by the same amount (1.50–2.21 µs), so we treat these differences as noise.
 
 ### E6: B+ tree order
 
@@ -236,7 +236,7 @@ The trees were much less sensitive to order. AVL build times stayed within 590�
 
 *Figure 6: B+ tree build time (ms), point lookup time (µs) and range query time (µs) vs. tree order (max keys per node, log scale). All three improve steeply up to order 32–64 and then level off. Error bars show the IQR of the 5 reps. Made in analysis/results.ipynb, E6 cell.*
 
-Increasing the order (keys per node) made the tree shorter: height fell from 14 at order 3 to 4 at order 32 and 2 at order 512. Every cost improved with it up to about order 64 and then leveled off. Build time fell from 542 ms to about 210 ms, memory from 28.9 MB to 8.5 MB, point hits from 4.9 µs to 2.0 µs, and range queries at selectivity 0.01 from 168 µs to 61 µs. Order 64 had the fastest hits (1.97 µs) and ranges (60.9 µs), and orders 256–512 the fastest builds (202–206 ms), but above order 64 the differences are small and the IQRs of neighbouring orders often overlap, so anything from 64 to 256 is a reasonable choice.
+Increasing the order (keys per node) made the tree shorter: height fell from 14 at order 3 to 4 at order 32 and 2 at order 512. Every cost improved with it up to about order 64 and then leveled off. Build time fell from 542 ms to about 200–210 ms, memory from 28.9 MB to about 8.3–8.7 MB, point hits from 4.9 µs to 2.0 µs, and range queries at selectivity 0.01 from 168 µs to 61 µs. Order 64 had the fastest hits (1.97 µs) and ranges (60.9 µs), and orders 256–512 the fastest builds (202–206 ms), but above order 64 the differences are small and the IQRs of neighbouring orders often overlap, so anything from 64 to 256 is a reasonable choice.
 
 This flattening is what we expected. The tree has about log_m(n) levels, and each level does a binary search over m keys, so the total comparisons stay around log₂(n) whatever the order. A higher order only saves time by visiting fewer nodes, and once the tree is 3 levels deep there are few hops left to save. The default order of 32 was within about 10% of the best for lookups and ranges, but its build was 19% slower than order 256 (240 vs. 202 ms).
 
@@ -304,7 +304,7 @@ chloe-mac (M5) was the fastest and vicente-mba (M1) the slowest in all 42 config
 
 ### Q3: Does the ranking of the indexes change from machine to machine?
 
-Mostly no. Each index kept the same rank on all four machines in 29 of 42 index–operation pairs, but the full ranking of all seven indexes matched on every machine for only 1 of the 6 operations, the 10,000-key build (Q3 cell). The fastest index never changed: ref_dict for point lookups, ref_bisect for range and prefix, and unsorted_list for builds. The slowest stayed the same for builds, point lookups and prefix; for range queries it was the hash table on three machines and the unsorted list on neil-mac. The 13 disagreements are swaps between neighbouring indexes with similar times (for example hash_table vs. ref_bisect on point hits), plus Vicente's noisy AVL rows. The closest call that matters, the B+ tree vs. the sorted list on prefix queries, is also a tie in E4, and we chose the B+ tree for its much cheaper build anyway, so no swap changes a recommendation.
+Mostly no. Each index kept the same rank on all four machines in 29 of 42 index–operation pairs, but the full ranking of all seven indexes matched on every machine for only 1 of the 6 operations, the 10,000-key build (Q3 cell). The fastest index never changed: ref_dict for point lookups, ref_bisect for range and prefix, and unsorted_list for builds. The slowest stayed the same for builds, point lookups and prefix; for range queries it was the hash table on three machines and the unsorted list on neil-mac. The 13 disagreements are swaps between neighbouring indexes with similar times (for example hash_table vs. ref_bisect on point hits), plus Vicente's noisy AVL rows. The closest call that matters, the B+ tree vs. the sorted list on prefix queries, is close in E4 too (tied at prefix lengths 1 and 5), and we chose the B+ tree for its much cheaper build anyway, so no swap changes a recommendation.
 
 ### Q4: How variable are repeated runs on each machine, and is any machine noisier?
 
@@ -356,9 +356,9 @@ Our experiments only go up to n = 114,000, so we would like to measure a much la
 
 ### Team contributions
 
-**Part A:** Kenza answered the questions for the unsorted list and AVL tree, Neil for the hash table, Chloe for the B+ tree, and Vicente for the sorted list.
+**Part A:** Kenza answered the questions for the unsorted list, sorted list, and AVL tree, Neil for the hash table, and Chloe for the B+ tree.
 
-**Part B:** Kenza wrote `random_keys`, `arrange`, and `point_queries`. Neil wrote `range_queries` and `prefix_queries`.
+**Part B:** Kenza wrote `random_keys` and `arrange`. Neil wrote `point_queries`, `range_queries`, and `prefix_queries`.
 
 **Part C:** Chloe wrote E1–E4 and Vicente wrote E5–E7. Neil ran the final E1–E7 measurements on neil-mac.
 
@@ -366,10 +366,12 @@ Our experiments only go up to n = 114,000, so we would like to measure a much la
 
 **Part E:** Every member ran the CORE suite on the original code and again after all fixes. Neil wrote the hardware comparison.
 
-**Report:** Each member wrote the sections for their respective work. We all drafted and edited the final report.
+**Report:** Each member wrote the sections for their respective work. We all drafted and edited the final report, with Kenza and Neil doing the final checks before submission and fixing last-minute bugs.
 
 ### AI assistance
 
-- **Chloe:** used Claude to help get the code diff for the Fix section of INC-04.
-- **Vicente:** used Claude to help with grammar, wording and formatting in the executive summary.
-- **Kenza:** used Claude (Claude Code) to check the report's numbers against `results/timings.csv`, fix the analysis notebooks so they reproduce every figure (including adding IQR error bars), and fix typos, formatting and number errors across the report and incident reports. Kenza reviewed the changes before committing them.
+- **Chloe:** used Claude to help get the code diff for the Fix section of INC-04, to help format the results page, and to explain anything that was unclear before labeling all the figures for E1–E7.
+- **Vicente:** used Claude to help with grammar, wording and formatting in the executive summary, to explain E6 specifically and give guidance on how to fully complete it, and for some help with the structure needed to graph the B+ tree diagram.
+- **Kenza:** used Claude Code to check the report's numbers against `results/timings.csv`, fix the analysis notebooks so they reproduce every figure (including adding IQR error bars), and fix typos, formatting and number errors across the report and incident reports. Kenza reviewed the changes before committing them.
+- **Neil:** [Neil: add what you used AI for here.]
+- **All members:** used Claude to check for typos and to flag any places where the report didn't match their code or what other members had written.

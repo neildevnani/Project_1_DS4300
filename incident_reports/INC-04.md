@@ -2,7 +2,7 @@
 
 ## Summary
 
-The AVL tree did too many rotations: about 13 per insert when building on all track IDs, when an AVL insert needs at most one rebalance (1 or 2 rotations) and less than one rotation on average. It also built taller trees than an AVL tree should have. This is because both the left and right rotations recalculated the parent's height before the child's height, even though the parent's height is calculated from the child's height. Swapping the two `_update_height` calls fixed it. In E1 on the same laptop (neil-mac), building all 114,000 track IDs went from 1,262 ms to 666 ms.
+The AVL tree did too many rotations: about 13 per insert when building on all track IDs, when an AVL insert needs at most one rebalance (1 or 2 rotations) and usually less than one rotation on average. It also built taller trees than an AVL tree should have. This is because both the left and right rotations recalculated the parent's height before the child's height, even though the parent's height is calculated from the child's height. Swapping the two `_update_height` calls fixed it. In E1 on the same laptop (neil-mac), building all 114,000 track IDs went from 1,262 ms to 666 ms.
 
 ## Detection
 
@@ -83,4 +83,4 @@ For F4 the AVL tree builds better than it seemed before the fix, but it is still
 
 ## Why the tests didn't catch it
 
-The tests only checked that the index returns the correct answers, not how much work it did to get them, and the buggy tree still returned correct answers. A test that would catch it would check that rotations per insert stay at or below about 1 on average (no more than 2 for any single insert), and that the `structure_info()` height is at most 1.44·log₂(n).
+The tests only checked that the index returns the correct answers, not how much work it did to get them, and the buggy tree still returned correct answers. A test that would catch it would check that a build does at most 2 rotations per insert (one single or double rotation each; the fixed tree does 0.55–1.20, the buggy one up to 14.7), and that the `structure_info()` height is at most 1.44·log₂(n).
