@@ -2,7 +2,7 @@
 
 ## 1. Executive summary
 
-We benchmarked five Python indexes and two C reference indexes on the 114,000-track Spotify catalog. We found four performance incidents in the interns' code, fixed all of them, and re-ran all seven experiments on the fixed code (commit 94403ce) on neil-mac.
+We benchmarked five Python indexes and two C reference indexes on the 114,000-track Spotify catalog. We found four performance incidents in the interns' code, fixed all of them, and re-ran all seven experiments on the fixed code (commit 94403ce) on neil-mac. Our recomendations are: 
 
 **F1, track page (point lookup by track_id): hash table.** It needed about 1.3 comparisons per lookup at every catalog size, so its work stays constant as the catalog grows, and it took 0.67 µs per hit at n = 114,000, the fastest of our five indexes (E2). Runner-up: AVL tree (1.38 µs).
 
@@ -316,36 +316,37 @@ CORE doesn't record memory, so we used E1's `memory_bytes` from neil-mac (Q5). A
 
 ## 7. Recommendations
 
-| Feature | Recommended | Runner-up | Strongest evidence |
-|---|---|---|---|
-| F1 Track page | Hash table | AVL tree | 0.67 µs per hit vs 1.38 µs for the AVL tree (E2) |
-| F2 Search-as-you-type | B+ tree | Sorted list | Fastest or tied at every prefix length (E4) |
-| F3 Workout mode | B+ tree | Sorted list | 64.8 µs per 1% range vs 2,950 µs for the hash table (E3) |
-| F4 Catalog import | B+ tree | Hash table | Fastest ordered build: 223 ms at n = 114,000 (E1) |
+### F1: Track page (point lookup by track_id)
 
-### F1: Track page
+Our first recommendation is the hash table, with the AVL tree as runner-up. Because a track page looks up one exact ID, the hash table is the fastest: it took 0.67 µs per hit and 0.49 µs per miss, against 1.38 µs per hit for the AVL tree. Its cost stayed fairly flat as the catalog grew, because it doesn't search through the data; it computes which bucket the track ID belongs in and jumps straight there. It also builds quickly (76.8 ms).
 
-The hash table computes a track ID's bucket and jumps straight to it, so its cost stayed nearly flat as n grew: 0.67 µs per hit, 0.49 µs per miss. The trade-offs are memory (22.3 MB, against 13.1 MB for the AVL tree and 9.2 MB for the B+ tree) and no range queries. If the catalog moved to disk, we would choose a B+ tree instead.
+The trade-offs are memory and query types. The hash table used 22.3 MB, against 13.1 MB for the AVL tree and 9.2 MB for the B+ tree, and it cannot answer range queries. Our answer would change if the catalog were too large to fit in memory and had to be stored on disk.
 
-### F2: Search-as-you-type
+### F2: Search-as-you-type (prefix on track_name)
 
-A prefix query is a range query, so ordered indexes jump to the first match. The B+ tree narrowly beat the sorted list (623 vs 677 µs for 1 character, 5.9 vs 6.2 µs for 5; the IQRs overlap at both) and builds 4× faster (223 vs 989 ms). It needs a reasonable order: orders 3–8 were slower on every operation (E6). For a title index that never changes, the sorted list works equally well.
+Our first recommendation is the B+ tree, with the sorted list as runner-up. The B+ tree was fastest or tied at every prefix length: 623 µs vs. 677 µs for the sorted list with 1 character, and 5.9 µs vs. 6.2 µs with 5 characters (the IQRs overlap at those two lengths). A prefix query is a range query over the titles that start with the prefix, so an ordered index can jump to the first match instead of starting at the beginning, and each B+ tree node holds many keys, so few nodes need to be visited.
 
-### F3: Workout mode
+Cost dropped as the prefix got longer, because a shorter prefix matches more titles. The B+ tree also builds faster than the sorted list and can add new titles without shifting a list.
 
-At selectivity 0.01 the sorted list took 53.2 µs, the B+ tree 64.8 µs and the AVL tree 129.3 µs, against about 2,600–2,950 µs for the full scans. The sorted list queries slightly faster but builds 4× slower and is costly to update, so it wins only if the tempo index is built once.
+One caveat is the order: with very small nodes (orders 3–8 in E6) every operation was slower. If the title index never got updates, with no titles added or removed, the sorted list would be a good choice too.
 
-### F4: Catalog import
+### F3: Workout mode (range on tempo)
 
-The hash table builds fastest (76.8 ms) but serves only exact lookups, so the B+ tree (223 ms) is the fastest index that keeps keys ordered, and insert order barely affected it (E5). The sorted list beats it only when new keys always arrive sorted and after every existing key (131 vs 166 ms in E5). Nightly track IDs are random, so in practice it would keep shifting.
+Our first recommendation is the B+ tree, with the sorted list as runner-up. At selectivity 0.01, the sorted list took 53.2 µs per query, the B+ tree 64.8 µs, the AVL tree 129.3 µs, the hash table 2,950 µs and the unsorted list 2,618 µs. For a range query, an ordered index finds where the range starts and stops reading when it reaches the end, and in a B+ tree the linked leaves make that walk easy.
+
+Cost grows with the size of the range. The sorted list is slightly faster for queries, but it was much slower to build and would be hard to keep updated. If the tempo index were built once and never updated, the sorted list would be the better choice.
+
+### F4: Catalog import (insert/build)
+
+Our first recommendation is the B+ tree, with the hash table as runner-up. The B+ tree is the fastest index to build that keeps the keys in order, and insert order did not affect it much. E1 build times at n = 114,000: hash table 76.8 ms, B+ tree 223 ms, AVL tree 666 ms, sorted list 989 ms, unsorted list 9.9 ms.
+
+The drawback is that the hash table builds faster, but it can only do exact lookups, while the B+ tree also answers range and prefix queries. If new tracks always arrived already sorted and after every existing key, the sorted list would only ever append at the end (131 ms in sorted order in E5, faster than the B+ tree's 166 ms) and could be used instead. Nightly track IDs are random compared with the existing catalog, though, so in practice the sorted list would keep shifting.
 
 ### What the reference indexes reveal
 
-The C versions show how much cost comes from Python itself. dict was 2.3× faster than our hash table on hits and 4.4× faster to build; ref_bisect was 2.6× faster than our sorted list on hits but barely faster to build (862 vs 989 ms), because list shifting already runs in C in both. C speeds every index up by a constant factor without changing its growth rate, so our recommendations hold in any language.
+The reference indexes run the same algorithms in C, so comparing them with our Python versions shows how much of the cost comes from Python rather than from the algorithm itself. Python's dict was about 2.3× faster than our hash table for hits (0.29 vs. 0.67 µs) and 4.4× faster to build (17.5 vs. 76.8 ms). ref_bisect was about 2.6× faster than our sorted list for hits (0.72 vs. 1.88 µs), but only slightly faster to build (862 vs. 989 ms), because building both is dominated by shifting the list on every insert, and that shifting already runs in C in both.
 
-## 8. Limitations
-
-Our experiments only go up to n = 114,000, so we would like to measure a much larger n to see whether the growth rates hold. Other apps running on our laptops, and running on battery instead of plugged in, add noise to the timings, and next time we would keep these conditions more consistent. Finally, everything was measured in memory, so the usual claim that a B+ tree wins on disk is not something we tested.
+So C makes each index a constant factor faster, but it does not change the big-O of an algorithm as the input grows, and our recommendations would still hold in a different language.
 
 ## Appendix
 
