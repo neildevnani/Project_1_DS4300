@@ -2,7 +2,7 @@
 
 ## 1. Executive summary
 
-We benchmarked five Python indexes and two C reference indexes on the 114,000-track Spotify catalog. We found four performance incidents in the interns' code, fixed all of them, and re-ran all seven experiments on the fixed code (commit 94403ce) on neil-mac. Our recommendations:
+We benchmarked five Python indexes and two C reference indexes on the 114,000-track Spotify catalog. We found four performance incidents in the interns' code, fixed all of them, and re-ran all seven experiments on the fixed code (commit 94403ce) on neil-mac.
 
 **F1, track page (point lookup by track_id): hash table.** It needed about 1.3 comparisons per lookup at every catalog size, so its work stays constant as the catalog grows, and it took 0.67 µs per hit at n = 114,000, the fastest of our five indexes (E2). Runner-up: AVL tree (1.38 µs).
 
