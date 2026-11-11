@@ -366,7 +366,7 @@ Our experiments only go up to n = 114,000, so we would like to measure a much la
 ### AI assistance
 
 - **Chloe:** used Claude to help get the code diff for the Fix section of INC-04, to help format the results page, and to explain anything that was unclear before labeling all the figures for E1–E7.
-- **Vicente:** used Claude to help with grammar, wording and formatting in the executive summary, to explain E6 specifically and give guidance on how to fully complete it, and for some help with the structure needed to graph the B+ tree diagram.
+- **Vicente:** used Claude to help with grammar, wording and formatting in the executive summary, to explain E6 specifically and give guidance on how to fully complete it, and for some help with the structure needed to graph the B+ tree diagram. Also used Claude to "condense" section 7
 - **Kenza:** used Claude Code to check the report's numbers against `results/timings.csv`, fix the analysis notebooks so they reproduce every figure (including adding IQR error bars), and fix typos, formatting and number errors across the report and incident reports. Kenza reviewed the changes before committing them.
 - **Neil:** [Neil: add what you used AI for here.]
 - **All members:** used Claude to check for typos and to flag any places where the report didn't match their code or what other members had written.
