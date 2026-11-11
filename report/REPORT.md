@@ -57,7 +57,7 @@ However, `search` itself (lines 53–65) does not use it. Instead it walks the l
 
 #### Hash table (`indexes/hash_table.py`)
 
-Search does three things: it computes the hash of the key, takes it modulo the number of buckets to pick one bucket, and then looks through that one bucket, comparing each stored key with the target until it finds a match or reaches the end of the bucket (which means the key was never inserted).
+Search does three things: it computes the hash of the key, takes its modulo with the number of buckets to select the correct bucket, and then looks through that one bucket, comparing each stored key with the target until it finds a match or reaches the end of the bucket. Reaching the end of the bucket means the key was never inserted.
 
 The first two steps happen on line 40 (inside `_bucket_for`, called from line 69) and the bucket scan is lines 71–77. Hashing and picking a bucket are O(1) because they don't depend on n. The bucket scan depends on how long the bucket is, but lines 55–56 keep the average bucket short: whenever the number of keys goes above 0.75 per bucket on average, the table grows and spreads the keys out (`_grow`, lines 58–66). So the expected cost of a search is O(1). The worst case is O(n), if all keys ended up in the same bucket.
 
@@ -182,7 +182,7 @@ All results in this section come from neil-mac on the final commit 94403ce, whic
 
 ### E1: Build cost vs. n
 
-![E1 build time vs n](../analysis/figures/e1_build.png)
+<img src="../analysis/figures/e1_build.png" alt="E1 build time vs n" width="500">
 
 *Figure 1: build time (ms) vs. n (keys) on log-log axes for every index, with the fitted slope in the legend. Lines with slope near 1 are O(n); the sorted list and ref_bisect are steeper and cross above the AVL tree at large n. Error bars show the IQR of the 5 reps. Made in analysis/results.ipynb, E1 cell.*
 
@@ -192,7 +192,7 @@ This produces a crossover. The AVL tree is the slowest index to build up to n = 
 
 ### E2: Point lookup cost vs. n
 
-![E2 point lookup time vs n](../analysis/figures/e2_lookup.png)
+<img src="../analysis/figures/e2_lookup.png" alt="E2 point lookup time vs n" width="500">
 
 *Figure 2: time per point hit (left) and miss (right) in µs vs. n on log-log axes, with fitted slopes. Only the unsorted list grows linearly; every other index stays nearly flat. Error bars show the IQR of the 5 reps. Made in analysis/results.ipynb, E2 cell.*
 
@@ -204,7 +204,7 @@ The hash table and ref_dict timings still rose slightly with n (slopes 0.19 and 
 
 ### E3: Range cost vs. selectivity
 
-![E3 range query time vs selectivity](../analysis/figures/e3_range.png)
+<img src="../analysis/figures/e3_range.png" alt="E3 range query time vs selectivity" width="350">
 
 *Figure 3: time per range query (µs) vs. selectivity on log-log axes, n = 114,000 tempo keys. Ordered indexes grow with the size of the range; the hash table, ref_dict and unsorted list stay near the cost of a full scan and rise only slightly. Error bars show the IQR of the 5 reps. Made in analysis/results.ipynb, E3 cell.*
 
@@ -214,7 +214,7 @@ The unordered indexes stayed near the cost of a full scan: the unsorted list at 
 
 ### E4: Prefix cost vs. prefix length
 
-![E4 prefix query time vs prefix length](../analysis/figures/e4_prefix.png)
+<img src="../analysis/figures/e4_prefix.png" alt="E4 prefix query time vs prefix length" width="350">
 
 *Figure 4: time per prefix query (µs, log scale) vs. prefix length on track_name, n = 114,000. Ordered indexes get about 100× faster as the prefix lengthens and fewer titles match; unordered indexes stay flat. Error bars show the IQR of the 5 reps. Made in analysis/results.ipynb, E4 cell.*
 
@@ -222,7 +222,7 @@ Prefix queries behave like range queries, because `base.py` turns each prefix in
 
 ### E5: Insert order
 
-![E5 build time by insert order](../analysis/figures/e5_order.png)
+<img src="../analysis/figures/e5_order.png" alt="E5 build time by insert order" width="500">
 
 *Figure 5: build time (ms, log scale) for each index and insert order at n = 100,000 synthetic keys. The list-based ordered indexes are by far the most sensitive to order, and reversed order is slowest for them because every insert shifts the whole list; the hash table and B+ tree are somewhat slower in random order. Error bars show the IQR of the 5 reps. Made in analysis/results.ipynb, E5 cell.*
 
@@ -232,7 +232,7 @@ The trees were much less sensitive to order. AVL build times stayed within 590�
 
 ### E6: B+ tree order
 
-![E6 effect of B+ tree order](../analysis/figures/e6_order.png)
+<img src="../analysis/figures/e6_order.png" alt="E6 effect of B+ tree order" width="500">
 
 *Figure 6: B+ tree build time (ms), point lookup time (µs) and range query time (µs) vs. tree order (max keys per node, log scale). All three improve steeply up to order 32–64 and then level off. Error bars show the IQR of the 5 reps. Made in analysis/results.ipynb, E6 cell.*
 
@@ -242,7 +242,7 @@ This flattening is what we expected. The tree has about log_m(n) levels, and eac
 
 ### E7: Many rows sharing a key
 
-![E7 point hits by key column](../analysis/figures/e7_duplicates.png)
+<img src="../analysis/figures/e7_duplicates.png" alt="E7 point hits by key column" width="500">
 
 *Figure 7: time per point hit (µs, log scale) for each index on track_genre and popularity (few distinct values) and track_id (79% unique). Every index except the unsorted list is faster on the columns with many duplicates, because it stores far fewer distinct keys. Error bars show the IQR of the 5 reps. Made in analysis/results.ipynb, E7 cell.*
 
@@ -258,7 +258,7 @@ Range queries on popularity show that a full scan only costs O(number of distinc
 
 Point lookups on the sorted list got slower as n grew, because `search` (`sorted_list.py` lines 57–63) walked the key list from the start instead of using the class's own binary search, `_bisect_left`, which `insert` and `range_search` already used. That made each lookup O(n) instead of O(log n). In E2 at n = 114,000, a hit took 46,119 comparisons and about 3,058 µs, against about 17 comparisons expected, and the fitted log-log slope of comparisons vs. n was 0.96. The counters were identical on all four machines in the original CORE runs, so the extra work came from the code itself. We replaced the loop with `_bisect_left` plus an equality check (commit 09fddb5). After the fix, a hit took 16.5 comparisons and 1.94 µs (about 1,600× faster), the slope dropped to 0.11 (what log₂ n looks like on log-log axes over this range), and `make test` still passes. The remaining ~2.7× gap to ref_bisect (0.73 µs in the same run) is the constant-factor cost of running binary search in Python rather than C.
 
-![INC-01: comparisons per hit before and after the fix](../incident_reports/inc01_before_after.png)
+<img src="../incident_reports/inc01_before_after.png" alt="INC-01: comparisons per hit before and after the fix" width="350">
 
 *Figure 8: comparisons per point hit for `sorted_list` in E2, before (f6f773e) and after (09fddb5) the fix, on log-log axes, against the log₂ n theory line. After the fix the points sit on the theory line. Made in analysis/sorted_analysis.ipynb, E2 before/after cell.*
 
@@ -266,7 +266,7 @@ Point lookups on the sorted list got slower as n grew, because `search` (`sorted
 
 Building the hash table got much slower as n grew, because `_grow` (`hash_table.py` line 60) added a fixed 1,024 buckets every time the table filled up instead of growing in proportion to its size. That made it resize about every 768 inserts, and every resize moves every key, so building the table cost O(n²) instead of O(n). In E1 with all 114,000 track IDs, the table resized 117 times and the fitted log-log slope of build time vs. n was 1.72. We changed line 60 to double the number of buckets (commit 305b687). After the fix, the same E1 build needed only 14 resizes, the slope dropped to 1.05 (matching O(n)), and the build took 76.8 ms instead of 1,629 ms on the same laptop (neil-mac). `make test` still passes.
 
-![INC-02: hash table build time and resizes before and after the fix](../analysis/inc02_hash_table_e1.png)
+<img src="../analysis/inc02_hash_table_e1.png" alt="INC-02: hash table build time and resizes before and after the fix" width="500">
 
 *Figure 9: hash table build time (ms, log-log, left) and number of resizes (right) vs. n (keys) in E1, before (f6f773e) and after (94403ce) the fix, both on neil-mac. Before the fix the resizes grow in a straight line with n and the build time curve is steeper (slope 1.72 vs. 1.05). Made in analysis/hash_analysis.ipynb.*
 
@@ -274,7 +274,7 @@ Building the hash table got much slower as n grew, because `_grow` (`hash_table.
 
 The B+ tree's `_collect_range` recursed into every child of every node without first checking whether that child could overlap the query range, so every range and prefix query scanned the whole tree: 45,653 comparisons for a 1% range query instead of about 474. The results were still correct, so the correctness-only tests missed it. The CORE suite showed it first, and E3 confirmed it, because the B+ tree's comparison count stayed flat at every selectivity (Figure 10). Our fix (commit c8ec36c) descends once to the leaf where `lo` belongs and then walks the `next` pointers until it passes `hi`. That restores O(log n + k) and, in vicente-mba's CORE runs, cut range queries from 4.90 ms to 0.19 ms (26×) and 3-letter prefix queries from 10.4 ms to 0.07 ms (157×). After the fix the B+ tree does the same work as the sorted list and becomes a candidate for F2 and F3.
 
-![INC-03: comparisons per range query before and after the fix](../incident_reports/INC-03_e3.png)
+<img src="../incident_reports/INC-03_e3.png" alt="INC-03: comparisons per range query before and after the fix" width="350">
 
 *Figure 10: comparisons per range query vs. selectivity (log-log) in E3, for the B+ tree before (f6f773e) and after (c8ec36c) the fix and for the sorted list. Before the fix the B+ tree line is flat at 45,653 comparisons; after it, it lies on top of the sorted list. Made in analysis/bplus_analysis.ipynb.*
 
@@ -282,7 +282,7 @@ The B+ tree's `_collect_range` recursed into every child of every node without f
 
 The AVL tree did too many rotations while building. Both `_rotate_right` (lines 62–63) and `_rotate_left` (lines 80–81) recalculated the new parent's height before the new child's. A node's height is 1 plus the larger of its children's heights, so the parent was computed from the child's old height. The wrong heights triggered unnecessary rotations, and the error grew with n. In E1 the tree did 12.95 rotations per insert on all 114,000 track IDs, when an AVL insert needs at most one rebalance (a single or double rotation, so 1–2 rotations) and usually fewer than one rotation on average. In E5 (random order, n = 100,000) the height reached 26, above the AVL limit of about 23.9 (1.44·log₂ n). Search answers were still correct, so the tests could not catch it; the tree was just doing extra work. We swapped the two height updates so the child is updated first (commit 549f076), and `make test` still passes. Rotations per insert dropped to 0.55 and stayed flat as n grew, and the build got faster: 1,262 ms to 666 ms in E1 on neil-mac.
 
-![INC-04: AVL build time and rotations per insert, before and after the fix](../analysis/inc04_build.png)
+<img src="../analysis/inc04_build.png" alt="INC-04: AVL build time and rotations per insert, before and after the fix" width="500">
 
 *Figure 11: AVL tree build time (ms, log-log, left) and rotations per insert (right) vs. n (keys) in E1, before (f6f773e) and after (94403ce) the fix, both on neil-mac. After the fix (orange) the build is about 1.9× faster at full size, and rotations per insert stay flat between 0.55 and 0.72 instead of climbing to 12.95. Made in analysis/AVL_tree.ipynb, E1 build cell.*
 
@@ -298,21 +298,21 @@ Yes. Every machine and every rep produced exactly the same comparisons, nodes vi
 
 chloe-mac (M5) was fastest and vicente-mba (M1) slowest in all 42 configurations, with a median ratio of 3.2×. The gap was smaller for the C reference indexes (median 2.5×) than for the Python indexes (median 3.3×). The largest ratios (AVL point hits 19.7×, B+ tree build 8.4×) come from Vicente's noisy after-fix run (Q4); among the other three machines, ratios ranged from 1.2× to 2.2× (median 1.46×). Because the benchmarks are single-threaded, per-core speed matters more than core count: neil-mac's 6-core A18 Pro beat kenza-mba's 8-core M2 on most point-hit bars (Figure 12).
 
-![Median time per point hit by machine](../analysis/hardware_point_hits.png)
+<img src="../analysis/hardware_point_hits.png" alt="Median time per point hit by machine" width="500">
 
 *Figure 12: median time per point hit (ns, log scale) at n = 114,000, by index and machine, CORE after fixes. For each index the machines differ mainly by a constant factor, with chloe-mac lowest and vicente-mba highest; the tall vicente-mba AVL bar is a noise spike. Made in analysis/Hardware_comparisons.ipynb, figure cell.*
 
 ### Q3: Does the ranking of the indexes change from machine to machine?
 
-Mostly no. Each index kept the same rank on all four machines in 29 of 42 index–operation pairs, but the full ranking matched for only 1 of 6 operations (the 10,000-key build, Q3). The fastest index never changed: ref_dict for point lookups, ref_bisect for range and prefix, unsorted_list for builds. The slowest was also stable, except on range queries (hash table on three machines, unsorted list on neil-mac). The 13 disagreements are swaps between neighbouring indexes with similar times (e.g. hash_table vs. ref_bisect on point hits) plus Vicente's noisy AVL rows. The closest call that matters, B+ tree vs. sorted list on prefix queries, is also close in E4 (tied at lengths 1 and 5), and we chose the B+ tree for its cheaper build anyway, so no swap changes a recommendation.
+Mostly no. Each index kept the same rank on all four machines in 29 of 42 index–operation pairs, but the full ranking matched for only 1 of 6 operations. The fastest index never changed: ref_dict for point lookups, ref_bisect for range and prefix, unsorted_list for builds. The slowest was also stable, except on range queries (hash table on three machines, unsorted list on neil-mac). The 13 disagreements are swaps between neighbouring indexes with similar times (e.g. hash_table vs. ref_bisect on point hits) plus Vicente's noisy AVL rows. The closest call that matters, B+ tree vs. sorted list on prefix queries, is also close in E4 (tied at lengths 1 and 5), and we chose the B+ tree for its cheaper build anyway, so no swap changes a recommendation.
 
 ### Q4: How variable are repeated runs on each machine, and is any machine noisier?
 
-We measured noise as the coefficient of variation (SD / mean) across 5 reps (Q4). After the fixes, kenza-mba (plugged in) was steadiest (median CV 0.023), then chloe-mac (0.033) and neil-mac (0.059). vicente-mba was by far the noisiest (0.147), though his before-fix run was steady (0.035), suggesting background load or battery throttling rather than hardware.
+We measured noise as the coefficient of variation (SD / mean) across 5 reps. After the fixes, kenza-mba (plugged in) was steadiest (median CV 0.023), then chloe-mac (0.033) and neil-mac (0.059). vicente-mba was by far the noisiest (0.147), though his before-fix run was steady (0.035), suggesting background load or battery throttling rather than hardware.
 
 ### Q5: How much RAM does each index need, and could RAM differences between machines matter?
 
-CORE doesn't record memory, so we used E1's `memory_bytes` from neil-mac (Q5). At n = 114,000, the indexes need 7.4 MB (unsorted list) to 22.3 MB (hash table). Including the loaded dataset, a full run needs about 2,000 bytes per row, so even the smallest Docker limit on the team (4 GB) would last until about 2 million rows, roughly 18× our catalog. RAM differences between machines therefore don't matter, and since memory depends on code and Python version rather than hardware, one machine's measurement is representative.
+CORE doesn't record memory, so we used E1's `memory_bytes` from neil-mac. At n = 114,000, the indexes need 7.4 MB (unsorted list) to 22.3 MB (hash table). Including the loaded dataset, a full run needs about 2,000 bytes per row, so even the smallest Docker limit on the team (4 GB) would last until about 2 million rows, roughly 18× our catalog. RAM differences between machines therefore don't matter, and since memory depends on code and Python version rather than hardware, one machine's measurement is representative.
 
 ## 7. Recommendations
 
@@ -369,5 +369,5 @@ So C makes each index a constant factor faster, but it does not change the big-O
 - **Chloe:** used Claude to help get the code diff for the Fix section of INC-04, to help format the results page, and to explain anything that was unclear before labeling all the figures for E1–E7.
 - **Vicente:** used Claude to help with grammar, wording and formatting in the executive summary, to explain E6 specifically and give guidance on how to fully complete it, and for some help with the structure needed to graph the B+ tree diagram. Also used Claude to "condense" section 7
 - **Kenza:** used Claude Code to check the report's numbers against `results/timings.csv`, fix the analysis notebooks so they reproduce every figure (including adding IQR error bars), and fix typos, formatting and number errors across the report and incident reports. Kenza reviewed the changes before committing them.
-- **Neil:** [Neil: add what you used AI for here.]
+- **Neil:** used Claude Code and Claude to help write the query functions, identify and fix the sorted list algorithm, and hardware/results analysis. AI was also used to ensure consistent formatting and grammar throughout the final report. Neil reviewed the changes before commiting them.
 - **All members:** used Claude to check for typos and to flag any places where the report didn't match their code or what other members had written.
