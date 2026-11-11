@@ -59,7 +59,7 @@ class AVLTreeIndex(Index):
         y.left = x.right
         x.right = y
         # x and y swapped places; refresh their stored heights.
-        _update_height(y) #y (child) must go first cuz parent h calc from childs height.
+        _update_height(y)  # y is now the child; update it first, since x's height depends on it
         _update_height(x)
         self.stats.rotations += 1
         return x
@@ -77,7 +77,7 @@ class AVLTreeIndex(Index):
         x.right = y.left
         y.left = x
         # x and y swapped places; refresh their stored heights.
-        _update_height(x) #x (child) must go first cuz parent h calc from childs height.
+        _update_height(x)  # x is now the child; update it first, since y's height depends on it
         _update_height(y)
         self.stats.rotations += 1
         return y

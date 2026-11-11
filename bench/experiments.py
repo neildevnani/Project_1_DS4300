@@ -126,10 +126,10 @@ def e2(writer: ResultsWriter, tracks: list[dict], reps: int) -> None:
             print(f"  n={n:>7,}  {name:<14} done", flush=True)
 
 def e3(writer: ResultsWriter, tracks: list[dict], reps: int) -> None:
-    pairs = key_value_pairs(tracks, "tempo") # turn inro (tempo,row_id)
+    pairs = key_value_pairs(tracks, "tempo") # turn into (tempo, row_id) pairs
     keys = [k for k, _ in pairs] #keep key (tempo)
     selectivities = (0.0001, 0.001, 0.01, 0.05, 0.1, 0.25) #what fraction of all the keys one range query should match
-    queries = {} #make empty dic
+    queries = {} # selectivity -> list of ranges
     for s in selectivities: # for each selectivity -> run query
         queries[s] = range_queries(keys, 200, s, seed=SEED)  #makes 200 ranges of that selectivity and stores it
 

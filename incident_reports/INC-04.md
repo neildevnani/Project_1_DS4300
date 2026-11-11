@@ -2,58 +2,47 @@
 
 ## Summary
 
-The AVL tree did too many rotation - about 13 per inserts instead of at most 1 when building on all track IDs and 
-created taller trees than AVL should be. This is because both of the left and right rotations re calculated the parents 
-height before calculating the childs height, but parents height is calculated from the child height. Swapping
-"_update_height(x)" and "_update_height(y)" fixed it. Build went from around 859.9 ms to 434.5 ms
+The AVL tree did too many rotations: about 13 per insert when building on all track IDs, when an AVL insert needs at most one rebalance (1 or 2 rotations) and less than one rotation on average. It also built taller trees than an AVL tree should have. This is because both the left and right rotations recalculated the parent's height before the child's height, even though the parent's height is calculated from the child's height. Swapping the two `_update_height` calls fixed it. In E1 on the same laptop (neil-mac), building all 114,000 track IDs went from 1,262 ms to 666 ms.
 
 ## Detection
 
-The insert order at E5 (graph "E5 rotations per insert"), as with every rotation the insert would grow with n, when it 
-should stay flat (occured in all 4 insert orders)
+We saw it in E5, the insert order experiment (the "E5 rotations per insert" graph). Rotations per insert grew with n when they should have stayed flat, and this happened in all four insert orders.
 
 ## Expected vs. observed
 
-The expected cost is O(n log n). Rotation per insert should be flat as n grows. Height is < than 1.44Xlog2(n). 
-So when n is = 100,000 (which is the synthetic data)
-it should be at most 23.9.
+**Expected:** building should cost O(n log n), and rotations per insert should stay flat as n grows. The height should stay below 1.44·log₂(n), so for the n = 100,000 synthetic keys in E5 it should be at most 23.9.
 
-We observed 
-12.95 rotations per insert at n = 114000 (spotify data) - E1
-went from 6.3 rotations per insert to 14.7 rotations per insert at n = 100000 - E5
-Random height was 26 and nearly sorted height was 25 at 100000 both above 23.9
+**Observed:**
 
+- 12.95 rotations per insert at n = 114,000 (Spotify data, E1).
+- Rotations per insert went from 6.3 at n = 1,000 to 14.7 at n = 100,000 (E5, random order).
+- At n = 100,000 the random-order height was 26 and the nearly-sorted height was 25, both above 23.9.
 
 ## Evidence
 
-![inc03_build.png](../analysis/inc03_build.png)
-Made build time slower for the before as you can see the orange line (after) is lower. Rotation orange line(after) is also flat
-![inc03_height.png](../analysis/inc03_height.png)
-After lines are lower and are short paths the trees are no longer as tall
-![inc03_rotations.png](../analysis/inc03_rotations.png)
-in the after rotation doesn't grow even as n grows. tree height in figure comes from "structure_info()"
+![E1 AVL build time and rotations per insert, before vs after](../analysis/inc04_build.png)
 
-Because the counters are deterministic, the extra rotations are not caused from noise or issues with laptop.
-the code versions were before:f6f773e and after = 549f076
+*E1 build time (left) and rotations per insert (right) vs. n. The after-fix line (orange) is lower for build time, and its rotations per insert stay flat.*
+
+![E5 AVL tree height, before vs after](../analysis/inc04_height.png)
+
+*E5 tree height vs. n for each insert order. After the fix the lines are lower, so the trees are no longer as tall.*
+
+![E5 AVL rotations per insert, before vs after](../analysis/inc04_rotations.png)
+
+*E5 rotations per insert vs. n for each insert order. After the fix, rotations per insert don't grow as n grows. The tree heights come from `structure_info()`.*
+
+Because the counters are deterministic, the extra rotations were not caused by noise or by anything about the laptop. The figures use code versions f6f773e (before) and 94403ce (after, our final commit), both run on neil-mac, so the build times are from the same laptop. The rotation and height counts are identical in the 549f076 run.
 
 ## Root cause
 
-The file comes from indexes/avl_tree.py and the incorrect functions were the _rotate_right lines 62–63 and _rotate_left 
-lines 80–81. A nodes height is supposed to be 1+ the largest height of all its children, then after the rotation the old
-parent moves down and becomes a child. In the code it would update the new parent first and therefor using the childs old height
-this made the height too large. Because of the wrong height rotations were done that were no needed resulting in incorrect
-heights that grew as n grows. The rotations were still correct (because a rotation never breaks the order) but were just doing extra work to correct which made the tree taller.
+The bug is in `indexes/avl_tree.py`, in `_rotate_right` (lines 62–63) and `_rotate_left` (lines 80–81). A node's height is supposed to be 1 plus the largest height of its children, and after a rotation the old parent moves down and becomes a child. The code updated the new parent first, so it used the child's old height, which made the parent's height too large. Because of the wrong heights, the tree did rotations that were not needed, and the incorrect heights grew as n grew. The answers were still correct, because a rotation never breaks the key order, but the tree was doing extra work and ended up taller.
 
 ## Fix
 
-In both rotation functions we swapped the order of the two
-update_height(x) & (y) calls so the node that moves down (new child) is updated before
-the node that moves up (new parent). Because parent's height is calculated from child heights, 
-the child has to be correct first.
+In both rotation functions we swapped the order of the two `_update_height(x)` and `_update_height(y)` calls, so the node that moves down (the new child) is updated before the node that moves up (the new parent). Because the parent's height is calculated from its children's heights, the child has to be correct first.
 
- Commits: `27e6aa4` (fixed `_rotate_left`), `549f076` (fixed
-`_rotate_right`), and `050f368`. The after-fix
-experiments were run on `549f076`.
+Commits: `27e6aa4` (fixed `_rotate_left`), `549f076` (fixed `_rotate_right`), and `050f368` (finished the code comment). The after-fix experiments were run on `549f076`.
 
 Diff (`git diff f6f773e..050f368 -- indexes/avl_tree.py`):
 
@@ -81,19 +70,17 @@ Diff (`git diff f6f773e..050f368 -- indexes/avl_tree.py`):
 
 ## Verification
 
-E1 rotation = 12.95 into 0.55
-E5 = random 14.7 into 0.7, sorted & reversed 11.4 into 1.00, nearly_sorted 10.4 into 1.20
-Height = random 26 into 20, sorted 21 into 17
-E1 build = 859.9 ms (e9c1863) into 434.5 ms (9aba440)
-Make test still passes.
+- E1 rotations per insert: 12.95 → 0.55.
+- E5 rotations per insert (n = 100,000): random 14.7 → 0.70, sorted and reversed 11.4 → 1.00, nearly sorted 10.4 → 1.20. Nearly sorted is above 1 because a double rotation counts as 2.
+- E5 height (n = 100,000): random 26 → 20, sorted 21 → 17.
+- E1 build on neil-mac: 1,262 ms (f6f773e) → 666 ms (94403ce).
+- CORE build on chloe-mac: 859.9 ms (e9c1863) → 434.5 ms (9aba440).
+- `make test` still passes.
 
 ## Impact on recommendations
 
-F4, the build is still slower than B+ tree so should still use B+ but it is not as poor as it seemed is better but
-still not better than B+. The Lookup is a little better went from 16.8 to 15.7
+For F4 the AVL tree builds better than it seemed before the fix, but it is still slower than the B+ tree, so we still recommend the B+ tree. Lookups also got a little cheaper: 16.8 → 15.7 comparisons per lookup.
 
 ## Why the tests didn't catch it
 
-The test that would catch it is checking rotation per insert is lower or equal to 1 on average after inserting a key. As well as
-making sure the structure_info() height is smaller or equal to 1.44·log2(n). The reason it wasn't caught was because it still obeyed the rules,
-the test only checked the index returns the correct answers not how it got them. But due to how many rotations it was doing the tree was just doing more work than it needed to
+The tests only checked that the index returns the correct answers, not how much work it did to get them, and the buggy tree still returned correct answers. A test that would catch it would check that rotations per insert stay at or below about 1 on average (no more than 2 for any single insert), and that the `structure_info()` height is at most 1.44·log₂(n).

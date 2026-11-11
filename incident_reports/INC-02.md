@@ -42,7 +42,7 @@ The fitted slope of build time vs. n on the log-log graph was 1.72 before the fi
 
 The counters show the problem even without the timings. structure_info also showed the number of buckets only ever went up by 1,024 at a time in our quick test (2,056, then 3,080, and so on up to 43,016).
 
-The E1 "before" rows are from code_version f6f773e (run on neil-mac) and the "after" rows are from 305b687 (run on kenza-mba). Our quick test numbers are from 37403b8 (before) and 305b687 (after), both on kenza-mba.
+The E1 "before" rows are from code_version f6f773e and the "after" rows are from 94403ce (our final commit, which includes this fix), both run on neil-mac, so the build times in the figure are directly comparable. Our quick test numbers are from 37403b8 (before) and 305b687 (after), both on kenza-mba.
 
 ## Root cause
 
@@ -91,7 +91,7 @@ Now the resizes only go up by 1 every time n doubles (8 at 1,000 keys up to 13 a
 
 Before the fix, 32,000 keys took 42 resizes and 0.1704 seconds. After the fix it took 13 resizes and 0.0424 seconds, so it's about 4 times faster at that size, and the gap would keep getting bigger as n grows.
 
-We also reran E1 after the fix. With the full 114,000 keys, the hash table now only needs 14 resizes instead of 117, and the build took 84.54 ms instead of 1,629.16 ms. The slope of build time vs. n went from 1.72 down to 1.05, which matches O(n). The before and after E1 runs were on different laptops, so the exact times aren't a perfect comparison, but the resizes counter and the slope don't depend on the machine, and both show the fix worked.
+We also reran E1 after the fix. With the full 114,000 keys, the hash table now only needs 14 resizes instead of 117, and the build took 76.83 ms instead of 1,629.16 ms on the same laptop (neil-mac), about 21 times faster. The slope of build time vs. n went from 1.72 down to 1.05, which matches O(n). Kenza's first E1 rerun right after the fix (305b687, on kenza-mba) gave the same 14 resizes and the same 1.05 slope, with an 84.54 ms build.
 
 make test still passes.
 

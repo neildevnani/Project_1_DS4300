@@ -117,8 +117,8 @@ Comparisons per hit dropped from 46,119 to 16.5 at n = 114,000, matching the
 ~17 that binary search predicts. The fitted log-log slope fell from k = 0.96
 to k = 0.11. A slope near 0.1 is what $\log_2 n$ itself produces on log-log
 axes over this range, so this confirms $O(\log n)$ lookups. Time per hit fell
-from 3,058 µs to 1.94 µs, about 1,600× faster. The remaining ~2.8× gap to
-`ref_bisect` (0.70 µs) is a constant factor: `ref_bisect` runs its binary
+from 3,058 µs to 1.94 µs, about 1,600× faster. The remaining ~2.7× gap to
+`ref_bisect` (0.73 µs in the same after-fix run) is a constant factor: `ref_bisect` runs its binary
 search in C, while `sorted_list` runs it in Python.
 
 `make test` passes on `09fddb5` (all tests pass, 3 skipped, the same as before

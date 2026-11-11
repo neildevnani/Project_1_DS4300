@@ -1,7 +1,7 @@
 # INC-03: B+ tree range and prefix queries scan the whole tree
 
 ## Summary
-The B+ tree's `range_search`, and `prefix_search`, twhich base.py builds on top of, visited every node and examined all keys in the tree on every single query, no matter the size of the range. On the CORE suite on `vicente-mba`, a 1% tempo range query examined 45,653 keys instead of about 474, and ran about 26× slower than after the fix; a 3-letter prefix query ran 157 times slower. The fix replaced this recursive walk bnack over the whole tree with a singular descent to the starting leaf, then followed with a walk along the leaves next pointers that stops at the first key past hi.
+The B+ tree's `range_search`, and `prefix_search`, which `base.py` builds on top of it, visited every node and examined all keys in the tree on every single query, no matter the size of the range. On the CORE suite on `vicente-mba`, a 1% tempo range query examined 45,653 keys instead of about 474, and ran about 26× slower than after the fix; a 3-letter prefix query ran 157 times slower. The fix replaced this recursive walk over the whole tree with a single descent to the starting leaf, followed by a walk along the leaves' `next` pointers that stops at the first key past `hi`.
 
 
 ## Detection
@@ -47,6 +47,8 @@ For every internal node, the code recursed into **every** child without checking
 The answers were still correct for two reasons. In each leaf, line 184 (`if lo <= key <= hi`) only kept keys inside the range, so the extra keys were examined and then thrown away. And the loop visited children from left to right, so the results still came out in key order. The bug cost time, not correctness.
 
 ## Fix
+
+Commit: `c8ec36c`. The diff below is the output of `git diff f6f773e..c8ec36c -- indexes/bplus_tree.py`.
 
 ```diff
 diff --git a/indexes/bplus_tree.py b/indexes/bplus_tree.py

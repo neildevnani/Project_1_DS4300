@@ -21,7 +21,18 @@ import string
 from typing import Any, Optional, Sequence
 
 
-def random_keys(n, length=8, alphabet=string.ascii_lowercase, seed=None):
+def random_keys(
+    n: int,
+    length: int = 8,
+    alphabet: str = string.ascii_lowercase,
+    seed: Optional[int] = None,
+) -> list[str]:
+    """Return ``n`` *distinct* random strings, each exactly ``length`` characters
+    long, using only characters from ``alphabet``, in random order.
+
+    Raise ``ValueError`` if ``n`` is larger than the number of possible
+    strings (``len(alphabet) ** length``).
+    """
     if n > len(alphabet) ** length:
         raise ValueError(f"cannot make {n} distinct keys of length {length}")
     rng = random.Random(seed)
@@ -118,21 +129,20 @@ def range_queries(
     """
     rng = random.Random(seed)
 
-    unique_sorted_keys = list(dict.fromkeys(sorted(keys))) # orders and removes duplicate keys
+    unique_sorted_keys = list(dict.fromkeys(sorted(keys)))  # sorts and removes duplicate keys
 
     d = len(unique_sorted_keys)
-    w = max(1,round(selectivity * d))
+    w = max(1, round(selectivity * d))
 
     ranges = []
 
     for _ in range(n_queries):
-            initial_index = rng.randint(0,d - w) # initial index initialzied randomly 
-            lo = unique_sorted_keys[initial_index]  # low is key is initial index
-            hi = unique_sorted_keys[initial_index + w - 1] # high is key of low key + (w - 1) indices
-            ranges.append((lo,hi))
+        initial_index = rng.randint(0, d - w)  # random start that leaves room for w keys
+        lo = unique_sorted_keys[initial_index]  # lo is the key at the start index
+        hi = unique_sorted_keys[initial_index + w - 1]  # hi is the key w - 1 positions later
+        ranges.append((lo, hi))
 
     return ranges
-
 
 
 def prefix_queries(
